@@ -1,4 +1,10 @@
 {
   "version": 2,
-  "cleanUrls": true
+  "cleanUrls": true,
+  "crons": [
+    {
+      "path": "/api/daily-jobs",
+      "schedule": "0 5 * * *"
+    }
+  ]
 }
