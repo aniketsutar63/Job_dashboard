@@ -1,0 +1,6 @@
+{
+  "lastUpdated": "2026-09-29",
+  "source": "Initial verified dashboard snapshot",
+  "note": "This file is the data layer for future dashboard updates. Replace its contents with the latest verified jobs when publishing a new deployment.",
+  "jobs": []
+}
