@@ -1,7 +1,10 @@
 module.exports = async (req, res) => {
   try {
     const cleanJobKey = process.env.CLEANJOBDATA_API_KEY;
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+
+    // Your actual Vercel variable name
+    const rawSupabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+
     const supabaseKey = process.env.SUPABASE_SECRET_KEY;
 
     if (!cleanJobKey) {
@@ -11,18 +14,34 @@ module.exports = async (req, res) => {
       });
     }
 
-    if (!supabaseUrl || !supabaseKey) {
+    if (!rawSupabaseUrl || !supabaseKey) {
       return res.status(500).json({
         success: false,
         error: "Supabase environment variables are missing",
-        supabaseUrlFound: !!supabaseUrl,
+        supabaseUrlFound: !!rawSupabaseUrl,
         supabaseKeyFound: !!supabaseKey
       });
     }
 
     // --------------------------------------------------
+    // Prepare Supabase REST URL
+    // Handles both:
+    // https://project.supabase.co
+    // AND
+    // https://project.supabase.co/rest/v1
+    // --------------------------------------------------
+
+    const supabaseUrl = rawSupabaseUrl
+      .trim()
+      .replace(/\/+$/, "");
+
+    const supabaseRestUrl = supabaseUrl.endsWith("/rest/v1")
+      ? supabaseUrl
+      : `${supabaseUrl}/rest/v1`;
+
+    // --------------------------------------------------
     // 1. Get Java jobs from CleanJobData
-    //    ONE API REQUEST instead of 8 requests
+    // ONE API REQUEST
     // --------------------------------------------------
 
     const params = new URLSearchParams({
@@ -47,7 +66,9 @@ module.exports = async (req, res) => {
     if (!response.ok) {
       const errorText = await response.text();
 
-      return res.status(response.status === 429 ? 429 : 502).json({
+      return res.status(
+        response.status === 429 ? 429 : 502
+      ).json({
         success: false,
         error: `CleanJob API error: ${response.status}`,
         details: errorText
@@ -83,7 +104,7 @@ module.exports = async (req, res) => {
       const location = (job.location || "").toLowerCase();
       const description = (job.description || "").toLowerCase();
 
-      // Must contain Java somewhere in the job
+      // Must contain Java
       const hasJava =
         title.includes("java") ||
         description.includes("java");
@@ -132,7 +153,7 @@ module.exports = async (req, res) => {
         return false;
       }
 
-      // Exclude clearly senior/lead roles
+      // Exclude clearly senior roles
       const seniorRole =
         title.includes("senior") ||
         title.includes("sr.") ||
@@ -155,7 +176,7 @@ module.exports = async (req, res) => {
     // --------------------------------------------------
 
     const existingResponse = await fetch(
-      `${supabaseUrl}/rest/v1/jobs?select=apply-url`,
+      `${supabaseRestUrl}/jobs?select=apply-url`,
       {
         headers: {
           apikey: supabaseKey,
@@ -195,7 +216,9 @@ module.exports = async (req, res) => {
       .map(job => ({
         "created-at": new Date().toISOString(),
 
-        title: job.title || "Java Developer",
+        title:
+          job.title ||
+          "Java Developer",
 
         company:
           job.company?.name ||
@@ -207,13 +230,16 @@ module.exports = async (req, res) => {
           "India",
 
         experience:
-          formatExperience(job.experience_level),
+          formatExperience(
+            job.experience_level
+          ),
 
         "posted-at":
           job.published ||
           new Date().toISOString(),
 
-        category: "Java",
+        category:
+          "Java",
 
         fit_score:
           calculateFitScore(job),
@@ -240,7 +266,7 @@ module.exports = async (req, res) => {
 
     if (newJobs.length > 0) {
       const insertResponse = await fetch(
-        `${supabaseUrl}/rest/v1/jobs`,
+        `${supabaseRestUrl}/jobs`,
         {
           method: "POST",
 
@@ -430,7 +456,10 @@ function createWhyMatch(job) {
     matches.push("REST APIs");
   }
 
-  if (text.includes("sql") || text.includes("mysql")) {
+  if (
+    text.includes("sql") ||
+    text.includes("mysql")
+  ) {
     matches.push("SQL/MySQL");
   }
 
@@ -438,7 +467,10 @@ function createWhyMatch(job) {
     matches.push("React");
   }
 
-  if (text.includes("hibernate") || text.includes("jpa")) {
+  if (
+    text.includes("hibernate") ||
+    text.includes("jpa")
+  ) {
     matches.push("Hibernate/JPA");
   }
 
