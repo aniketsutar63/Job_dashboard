@@ -1,13 +1,13 @@
 module.exports = async (req, res) => {
   try {
-    const cleanJobKey = process.env.CLEANJOB_API_KEY;
+    const cleanJobKey = process.env.CLEANJOBDATA_API_KEY;
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_BASE_URL;
     const supabaseKey = process.env.SUPABASE_SECRET_KEY;
 
     if (!cleanJobKey) {
       return res.status(500).json({
         success: false,
-        error: "CLEANJOB_API_KEY is missing"
+        error: "CLEANJOBDATA_API_KEY is missing"
       });
     }
 
