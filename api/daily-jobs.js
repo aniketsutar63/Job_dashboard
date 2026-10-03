@@ -11,10 +11,13 @@ module.exports = async (req, res) => {
       });
     }
 
+    // Check Supabase environment variables
     if (!supabaseUrl || !supabaseKey) {
       return res.status(500).json({
         success: false,
-        error: "Supabase environment variables are missing"
+        error: "Supabase environment variables are missing",
+        supabaseUrlFound: !!supabaseUrl,
+        supabaseKeyFound: !!supabaseKey
       });
     }
 
