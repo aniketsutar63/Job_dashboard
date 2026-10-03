@@ -1,7 +1,7 @@
 module.exports = async (req, res) => {
   try {
     const cleanJobKey = process.env.CLEANJOBDATA_API_KEY;
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_BASE_URL;
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const supabaseKey = process.env.SUPABASE_SECRET_KEY;
 
     if (!cleanJobKey) {
