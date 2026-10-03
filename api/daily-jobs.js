@@ -2,9 +2,7 @@ module.exports = async (req, res) => {
   try {
     const cleanJobKey = process.env.CLEANJOBDATA_API_KEY;
 
-    // Your actual Vercel variable name
     const rawSupabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-
     const supabaseKey = process.env.SUPABASE_SECRET_KEY;
 
     if (!cleanJobKey) {
@@ -23,14 +21,6 @@ module.exports = async (req, res) => {
       });
     }
 
-    // --------------------------------------------------
-    // Prepare Supabase REST URL
-    // Handles both:
-    // https://project.supabase.co
-    // AND
-    // https://project.supabase.co/rest/v1
-    // --------------------------------------------------
-
     const supabaseUrl = rawSupabaseUrl
       .trim()
       .replace(/\/+$/, "");
@@ -41,13 +31,13 @@ module.exports = async (req, res) => {
 
     // --------------------------------------------------
     // 1. Get Java jobs from CleanJobData
-    // ONE API REQUEST
+    // Broad search: India + Java
+    // We enforce the 24-hour rule ourselves below.
     // --------------------------------------------------
 
     const params = new URLSearchParams({
       title: "Java",
       country_id: "101",
-      max_age: "24h",
       limit: "50",
       sort_by: "published",
       include_expired: "false",
@@ -92,17 +82,46 @@ module.exports = async (req, res) => {
     );
 
     // --------------------------------------------------
-    // 3. Filter relevant India Java jobs
+    // 3. Keep jobs published within last 24 hours
     // --------------------------------------------------
 
-    const filteredJobs = uniqueJobs.filter(job => {
+    const now = Date.now();
+
+    const twentyFourHoursAgo =
+      now - (24 * 60 * 60 * 1000);
+
+    const recentJobs = uniqueJobs.filter(job => {
+      if (!job.published) {
+        return false;
+      }
+
+      const publishedTime =
+        new Date(job.published).getTime();
+
+      return (
+        !Number.isNaN(publishedTime) &&
+        publishedTime >= twentyFourHoursAgo &&
+        publishedTime <= now
+      );
+    });
+
+    // --------------------------------------------------
+    // 4. Filter relevant India Java jobs
+    // --------------------------------------------------
+
+    const filteredJobs = recentJobs.filter(job => {
       if (job.is_active === false) {
         return false;
       }
 
-      const title = (job.title || "").toLowerCase();
-      const location = (job.location || "").toLowerCase();
-      const description = (job.description || "").toLowerCase();
+      const title =
+        (job.title || "").toLowerCase();
+
+      const location =
+        (job.location || "").toLowerCase();
+
+      const description =
+        (job.description || "").toLowerCase();
 
       // Must contain Java
       const hasJava =
@@ -172,7 +191,7 @@ module.exports = async (req, res) => {
     });
 
     // --------------------------------------------------
-    // 4. Get existing jobs from Supabase
+    // 5. Get existing jobs from Supabase
     // --------------------------------------------------
 
     const existingResponse = await fetch(
@@ -186,7 +205,8 @@ module.exports = async (req, res) => {
     );
 
     if (!existingResponse.ok) {
-      const errorText = await existingResponse.text();
+      const errorText =
+        await existingResponse.text();
 
       return res.status(502).json({
         success: false,
@@ -195,7 +215,8 @@ module.exports = async (req, res) => {
       });
     }
 
-    const existingJobs = await existingResponse.json();
+    const existingJobs =
+      await existingResponse.json();
 
     const existingUrls = new Set(
       existingJobs
@@ -204,17 +225,22 @@ module.exports = async (req, res) => {
     );
 
     // --------------------------------------------------
-    // 5. Prepare only NEW jobs
+    // 6. Prepare NEW jobs
     // --------------------------------------------------
 
     const newJobs = filteredJobs
       .filter(job => {
-        const url = job.application_url;
+        const url =
+          job.application_url;
 
-        return url && !existingUrls.has(url);
+        return (
+          url &&
+          !existingUrls.has(url)
+        );
       })
       .map(job => ({
-        "created-at": new Date().toISOString(),
+        "created-at":
+          new Date().toISOString(),
 
         title:
           job.title ||
@@ -261,7 +287,7 @@ module.exports = async (req, res) => {
       }));
 
     // --------------------------------------------------
-    // 6. Insert new jobs into Supabase
+    // 7. Insert new jobs
     // --------------------------------------------------
 
     if (newJobs.length > 0) {
@@ -272,12 +298,16 @@ module.exports = async (req, res) => {
 
           headers: {
             apikey: supabaseKey,
-            Authorization: `Bearer ${supabaseKey}`,
-            "Content-Type": "application/json",
-            Prefer: "return=representation"
+            Authorization:
+              `Bearer ${supabaseKey}`,
+            "Content-Type":
+              "application/json",
+            Prefer:
+              "return=representation"
           },
 
-          body: JSON.stringify(newJobs)
+          body:
+            JSON.stringify(newJobs)
         }
       );
 
@@ -294,7 +324,7 @@ module.exports = async (req, res) => {
     }
 
     // --------------------------------------------------
-    // 7. Success response
+    // 8. Success
     // --------------------------------------------------
 
     return res.status(200).json({
@@ -305,6 +335,9 @@ module.exports = async (req, res) => {
 
       unique:
         uniqueJobs.length,
+
+      recent_24h:
+        recentJobs.length,
 
       filtered:
         filteredJobs.length,
@@ -334,7 +367,8 @@ function formatExperience(level) {
     return "0–3 years";
   }
 
-  const value = String(level).toUpperCase();
+  const value =
+    String(level).toUpperCase();
 
   if (value === "EN") {
     return "Entry Level";
@@ -357,7 +391,7 @@ function formatExperience(level) {
 
 
 // --------------------------------------------------
-// Calculate fit score
+// Fit score
 // --------------------------------------------------
 
 function calculateFitScore(job) {
@@ -410,7 +444,7 @@ function calculateFitScore(job) {
 
 
 // --------------------------------------------------
-// Create job summary
+// Summary
 // --------------------------------------------------
 
 function createSummary(job) {
@@ -433,7 +467,7 @@ function createSummary(job) {
 
 
 // --------------------------------------------------
-// Why this job matches
+// Why match
 // --------------------------------------------------
 
 function createWhyMatch(job) {
