@@ -1640,6 +1640,42 @@ function updateResearchDate(){
 
 
 /* =========================================================
+   REMOVE DUPLICATE JOB LISTINGS
+   Deduplicates API results for display without deleting
+   any records from Supabase.
+   ========================================================= */
+function normalizeJobValue(value){
+  return String(value || "")
+    .toLowerCase()
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/https?:\/\//g, "")
+    .replace(/[?#].*$/, "")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+}
+
+function deduplicateJobs(jobs){
+  const seen = new Set();
+  return jobs.filter(job => {
+    const title = normalizeJobValue(job.title);
+    const company = normalizeJobValue(job.company);
+    const location = normalizeJobValue(job.location);
+    const applyUrl = normalizeJobValue(job["apply-url"] || job.apply_url || job.url);
+
+    // Prefer a stable application URL when available; otherwise
+    // compare title + company + location.
+    const key = applyUrl
+      ? `url:${applyUrl}`
+      : `job:${title}|${company}|${location}`;
+
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+/* =========================================================
    LOAD LIVE JOBS
    ========================================================= */
 
@@ -1699,12 +1735,9 @@ async function loadJobs(){
     }
 
 
-    allJobs =
-      Array.isArray(
-        result.jobs
-      )
-        ? result.jobs
-        : [];
+    allJobs = deduplicateJobs(
+      Array.isArray(result.jobs) ? result.jobs : []
+    );
 
 
     updateDashboardStats();
