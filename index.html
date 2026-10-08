@@ -551,6 +551,364 @@ footer{
 
 </style>
 
+
+<style>
+  /* ================= INTERVIEW DASHBOARD UI ================= */
+
+  .section-title {
+    margin-top: 42px;
+  }
+
+  .interview-dashboard {
+    margin: 18px 0 42px;
+  }
+
+  .interview-hero {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 24px;
+    padding: 28px;
+    border-radius: 22px;
+    background: linear-gradient(135deg, #eef4ff 0%, #f8fbff 55%, #ffffff 100%);
+    border: 1px solid #dbe6ff;
+    box-shadow: 0 14px 35px rgba(25, 62, 120, 0.10);
+  }
+
+  .interview-hero h3 {
+    margin: 7px 0 8px;
+    font-size: clamp(24px, 3vw, 34px);
+  }
+
+  .interview-hero p {
+    margin: 0;
+    max-width: 720px;
+  }
+
+  .eyebrow {
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 1.5px;
+    color: #2563eb;
+  }
+
+  .interview-score {
+    min-width: 120px;
+    text-align: center;
+    padding: 18px;
+    border-radius: 18px;
+    background: #ffffff;
+    border: 1px solid #dce6f7;
+    box-shadow: 0 8px 22px rgba(25, 62, 120, 0.08);
+  }
+
+  .interview-score span,
+  .interview-score small {
+    display: block;
+    font-size: 12px;
+  }
+
+  .interview-score strong {
+    display: block;
+    font-size: 44px;
+    line-height: 1;
+    margin: 7px 0;
+    color: #2563eb;
+  }
+
+  .interview-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+    margin-top: 18px;
+  }
+
+  .tip-card {
+    position: relative;
+    padding: 22px;
+    border: 1px solid #e1e8f3;
+    border-radius: 18px;
+    background: #fff;
+    box-shadow: 0 8px 24px rgba(25, 62, 120, 0.06);
+    transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease;
+  }
+
+  .tip-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 14px 30px rgba(25, 62, 120, 0.11);
+    border-color: #c8d8f7;
+  }
+
+  .tip-card h3 {
+    margin: 0 0 8px;
+    padding-right: 42px;
+  }
+
+  .tip-card p {
+    margin: 0 0 12px;
+  }
+
+  .tip-card b {
+    font-size: 13px;
+  }
+
+  .tip-number {
+    position: absolute;
+    top: 18px;
+    right: 18px;
+    width: 32px;
+    height: 32px;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    background: #eef4ff;
+    color: #2563eb;
+    font-size: 12px;
+    font-weight: 800;
+  }
+
+  .interview-quick-check {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 14px;
+    margin-top: 18px;
+  }
+
+  .interview-quick-check > div {
+    padding: 18px;
+    border-radius: 16px;
+    background: #f8fafc;
+    border: 1px solid #e5eaf1;
+  }
+
+  .interview-quick-check strong,
+  .interview-quick-check span {
+    display: block;
+  }
+
+  .interview-quick-check strong {
+    margin-bottom: 6px;
+  }
+
+  .interview-quick-check span {
+    font-size: 13px;
+    line-height: 1.55;
+  }
+
+  @media (max-width: 800px) {
+    .interview-grid,
+    .interview-quick-check {
+      grid-template-columns: 1fr;
+    }
+
+    .interview-hero {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
+    .interview-score {
+      width: 100%;
+      box-sizing: border-box;
+    }
+  }
+</style>
+
+
+<style>
+  /* MODERN MULTI-COLOUR THEME: blue, teal, violet and amber */
+  :root {
+    --bg: #f5f7fc;
+    --panel: #ffffff;
+    --text: #172b4d;
+    --muted: #65758b;
+    --line: #e2e8f0;
+    --accent: #315eea;       /* blue */
+    --green: #0f8b78;        /* teal */
+    --teal: #0f8b78;
+    --teal-light: #e4f7f2;
+    --blue-light: #edf2ff;
+    --purple: #7952c7;
+    --purple-light: #f2edff;
+    --amber: #d97706;
+    --amber-light: #fff4df;
+    --shadow: 0 8px 24px rgba(23, 43, 77, 0.07);
+  }
+
+  body {
+    background:
+      radial-gradient(ellipse at top left, rgba(37, 99, 235, .055), transparent 34%),
+      var(--bg);
+    color: var(--text);
+  }
+
+  header {
+    border-bottom: 1px solid var(--line);
+    padding-bottom: 18px;
+  }
+
+  .kicker, .eyebrow {
+    color: var(--accent);
+  }
+
+  .panel, .role, .stat, .job-card, .message, .tip-card {
+    border-color: var(--line);
+    box-shadow: var(--shadow);
+  }
+
+  .panel, .role, .stat, .job-card, .message, .tip-card {
+    background: var(--panel);
+  }
+
+  .stat b {
+    color: var(--accent);
+  }
+
+  .role {
+    transition: transform .18s ease, box-shadow .18s ease;
+  }
+
+  .role:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 28px rgba(23, 43, 77, .10);
+  }
+
+  .filter.active {
+    background: var(--text);
+    border-color: var(--text);
+    color: #fff;
+  }
+
+  button, .filter, input {
+    transition: border-color .18s ease, box-shadow .18s ease, background .18s ease;
+  }
+
+  button:hover, .filter:hover {
+    border-color: #b8c9e8;
+    box-shadow: 0 4px 12px rgba(23, 43, 77, .07);
+  }
+
+  input:focus {
+    outline: 3px solid rgba(37, 99, 235, .14);
+    border-color: var(--accent);
+  }
+
+  .badge {
+    background: var(--blue-light);
+    color: #214db5;
+  }
+
+  .apply-first {
+    background: #e6f6f0;
+    color: #087443;
+  }
+
+  .good-match {
+    background: #fff4dc;
+    color: #8a5200;
+  }
+
+  .stretch-role {
+    background: #fff0ee;
+    color: #a33c32;
+  }
+
+  .score {
+    color: var(--teal);
+  }
+
+  .mini {
+    background: #f5f8fc;
+  }
+
+  .mini.gap {
+    background: #fff8eb;
+  }
+
+  .apply {
+    background: var(--accent);
+  }
+
+  .apply:hover {
+    background: #1d4ed8;
+    opacity: 1;
+  }
+
+  .note {
+    background: #edf7f6;
+    border-left-color: var(--teal);
+    color: #345b5b;
+  }
+
+  .interview-hero {
+    background: linear-gradient(135deg, #edf3ff 0%, #f5fbff 58%, #effaf7 100%);
+    border-color: #dce7f5;
+  }
+
+  .interview-score strong,
+  .tip-number {
+    color: var(--teal);
+  }
+
+  .tip-number {
+    background: var(--teal-light);
+  }
+
+  .interview-quick-check > div {
+    background: #f8fafc;
+    border-color: var(--line);
+  }
+
+  footer {
+    border-top: 1px solid var(--line);
+    padding-top: 18px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      transition: none !important;
+      animation: none !important;
+      scroll-behavior: auto !important;
+    }
+  }
+
+
+  /* Use colour as a navigation cue, while keeping the layout clean */
+  header {
+    border-top: 4px solid var(--accent);
+    border-radius: 0 0 12px 12px;
+  }
+  .stat:nth-child(4n + 1) { border-top: 3px solid var(--accent); }
+  .stat:nth-child(4n + 2) { border-top: 3px solid var(--teal); }
+  .stat:nth-child(4n + 3) { border-top: 3px solid var(--purple); }
+  .stat:nth-child(4n + 4) { border-top: 3px solid var(--amber); }
+  .stat:nth-child(4n + 1) b { color: var(--accent); }
+  .stat:nth-child(4n + 2) b { color: var(--teal); }
+  .stat:nth-child(4n + 3) b { color: var(--purple); }
+  .stat:nth-child(4n + 4) b { color: var(--amber); }
+  .panel:nth-of-type(4n + 1) { --section-accent: var(--accent); }
+  .panel:nth-of-type(4n + 2) { --section-accent: var(--teal); }
+  .panel:nth-of-type(4n + 3) { --section-accent: var(--purple); }
+  .panel:nth-of-type(4n + 4) { --section-accent: var(--amber); }
+  .panel h2, .panel h3 { text-decoration-color: var(--section-accent, var(--accent)); }
+  .panel { border-top: 3px solid var(--section-accent, transparent); }
+  .tip-card:nth-child(4n + 1) { border-left: 3px solid var(--accent); }
+  .tip-card:nth-child(4n + 2) { border-left: 3px solid var(--teal); }
+  .tip-card:nth-child(4n + 3) { border-left: 3px solid var(--purple); }
+  .tip-card:nth-child(4n + 4) { border-left: 3px solid var(--amber); }
+  .tip-card:nth-child(4n + 2) .tip-number { color: var(--teal); background: var(--teal-light); }
+  .tip-card:nth-child(4n + 3) .tip-number { color: var(--purple); background: var(--purple-light); }
+  .tip-card:nth-child(4n + 4) .tip-number { color: var(--amber); background: var(--amber-light); }
+  .filter.active { background: var(--accent); border-color: var(--accent); }
+  .apply { background: linear-gradient(135deg, var(--accent), #4f46e5); }
+  .apply:hover { background: linear-gradient(135deg, #244bd0, #4338ca); }
+  .score { color: var(--teal); }
+  .good-match { background: var(--amber-light); color: #925400; }
+  .note { background: var(--teal-light); border-left-color: var(--teal); }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { scroll-behavior: auto !important; transition: none !important; }
+  }
+</style>
+
 </head>
 
 
@@ -879,145 +1237,7 @@ Stretch Role (0)
 
 
 
-<section
-class="grid"
-id="jobs"
->
 
-<div
-id="loadingJobs"
-class="note"
->
-Loading latest Java jobs...
-</div>
-
-</section>
-
-
-
-<!-- =====================================================
-     RESUME IMPROVEMENTS
-     ===================================================== -->
-
-<h2>
-Resume improvements for the top 10
-</h2>
-
-
-<section class="panel">
-
-<ol>
-
-<li>
-
-<b>Sparken / MindWorx / eShopbox:</b>
-
-Add Spring MVC, Spring Framework, Hibernate,
-RESTful Web Services, Maven, J2EE, MySQL
-and Tomcat where accurate.
-
-</li>
-
-
-<li>
-
-<b>Mithi:</b>
-
-Add AWS, Docker and Angular only if you can
-substantiate hands-on exposure; otherwise
-emphasize React and database integration.
-
-</li>
-
-
-<li>
-
-<b>Diksha:</b>
-
-Strengthen one backend bullet with API ownership,
-secure coding, CI/CD and a measurable outcome
-if accurate.
-
-</li>
-
-
-<li>
-
-<b>WeKnow / ALLPS:</b>
-
-Lead with Java + Spring Boot + REST + MySQL
-+ Git + debugging and third-party API integration
-if genuinely done.
-
-</li>
-
-
-<li>
-
-<b>Decipher Zone:</b>
-
-Use "Java Backend Developer" prominently and
-emphasize Spring Boot, REST, JPA/Hibernate,
-SQL and testing.
-
-</li>
-
-
-<li>
-
-<b>Quick Heal:</b>
-
-Add Angular, unit testing, Kafka, MongoDB and AWS
-only where supported; surface Spring Security/JWT.
-
-</li>
-
-
-<li>
-
-<b>SAP Fioneer:</b>
-
-Add a Backend & Cloud line for Microservices,
-CI/CD, Docker and AWS/Azure as you gain evidence.
-
-</li>
-
-
-<li>
-
-<b>Deloitte:</b>
-
-Add Angular/TypeScript, JUnit/Mockito,
-Swagger/OpenAPI, Docker/Kubernetes and Kafka
-if substantiated.
-
-</li>
-
-
-<li>
-
-<b>Accenture / Barclays / Mastercard:</b>
-
-Add Java 17/21, microservices, CI/CD,
-JUnit/Mockito, Maven, Docker/Kubernetes
-and cloud after gaining evidence.
-
-</li>
-
-
-<li>
-
-<b>Quorum:</b>
-
-Add PL/SQL, Jenkins and AWS/Kubernetes only
-if supportable; emphasize Collections,
-multithreading, exceptions and SQL now.
-
-</li>
-
-</ol>
-
-</section>
 
 
 <!-- =====================================================
@@ -1185,6 +1405,156 @@ Copy Cover Letter
 </div>
 
 </section>
+
+
+
+<!-- =====================================================
+     INTERVIEW PREPARATION
+     ===================================================== -->
+
+<h2 class="section-title">
+  Interview Tips to Crack the Interview
+</h2>
+
+<section class="interview-dashboard">
+
+  <div class="interview-hero">
+    <div>
+      <span class="eyebrow">INTERVIEW MODE</span>
+      <h3>Prepare smart. Answer clearly. Get selected.</h3>
+      <p>
+        A practical quick-reference for Java Developer, Spring Boot,
+        Backend and Full Stack Java interviews.
+      </p>
+    </div>
+    <div class="interview-score">
+      <span>Ready Checklist</span>
+      <strong>10</strong>
+      <small>key areas</small>
+    </div>
+  </div>
+
+  <div class="interview-grid">
+
+    <article class="tip-card">
+      <span class="tip-number">01</span>
+      <h3>Master Core Java</h3>
+      <p>
+        Revise OOPs, String, Exception Handling, Collections,
+        Multithreading, Java 8 features and important differences.
+      </p>
+      <b>Focus:</b> Explain concepts with a small real example.
+    </article>
+
+    <article class="tip-card">
+      <span class="tip-number">02</span>
+      <h3>Know Your Spring Boot</h3>
+      <p>
+        Be ready for dependency injection, annotations, REST APIs,
+        Spring MVC, configuration, JPA/Hibernate and exception handling.
+      </p>
+      <b>Focus:</b> Explain how your application works end-to-end.
+    </article>
+
+    <article class="tip-card">
+      <span class="tip-number">03</span>
+      <h3>Prepare SQL</h3>
+      <p>
+        Practice joins, GROUP BY, subqueries, indexes, normalization,
+        constraints and common interview queries.
+      </p>
+      <b>Focus:</b> Write queries instead of only explaining them.
+    </article>
+
+    <article class="tip-card">
+      <span class="tip-number">04</span>
+      <h3>Explain Your Projects</h3>
+      <p>
+        Prepare a 60–90 second explanation covering the problem,
+        architecture, technologies, your contribution and result.
+      </p>
+      <b>Focus:</b> Clearly explain what YOU implemented.
+    </article>
+
+    <article class="tip-card">
+      <span class="tip-number">05</span>
+      <h3>Practice REST APIs</h3>
+      <p>
+        Understand GET, POST, PUT, PATCH and DELETE, status codes,
+        JSON, validation, authentication and API testing.
+      </p>
+      <b>Focus:</b> Be able to design one API on a whiteboard.
+    </article>
+
+    <article class="tip-card">
+      <span class="tip-number">06</span>
+      <h3>Spring Security & JWT</h3>
+      <p>
+        Understand authentication vs authorization, JWT flow,
+        filters, roles, protected endpoints and token validation.
+      </p>
+      <b>Focus:</b> Explain the complete login-to-request flow.
+    </article>
+
+    <article class="tip-card">
+      <span class="tip-number">07</span>
+      <h3>Be Ready for Coding</h3>
+      <p>
+        Practice arrays, strings, collections, sorting, searching,
+        HashMap problems and basic Java coding questions.
+      </p>
+      <b>Focus:</b> First explain your approach, then code.
+    </article>
+
+    <article class="tip-card">
+      <span class="tip-number">08</span>
+      <h3>Answer With STAR</h3>
+      <p>
+        For behavioral questions, structure your answer with Situation,
+        Task, Action and Result.
+      </p>
+      <b>Focus:</b> Keep answers specific and evidence-based.
+    </article>
+
+    <article class="tip-card">
+      <span class="tip-number">09</span>
+      <h3>Research the Company</h3>
+      <p>
+        Know the company's product, technology area, role requirements
+        and why you want to join.
+      </p>
+      <b>Focus:</b> Prepare 2–3 thoughtful questions for the interviewer.
+    </article>
+
+    <article class="tip-card">
+      <span class="tip-number">10</span>
+      <h3>Close Strong</h3>
+      <p>
+        Summarize your strongest skills, show interest in the role and
+        ask about the next step in the interview process.
+      </p>
+      <b>Focus:</b> Be confident, concise and professional.
+    </article>
+
+  </div>
+
+  <div class="interview-quick-check">
+    <div>
+      <strong>Before the interview</strong>
+      <span>Resume • Projects • Java • SQL • Spring Boot • Company research</span>
+    </div>
+    <div>
+      <strong>During the interview</strong>
+      <span>Listen carefully • Think aloud • Give examples • Don't bluff</span>
+    </div>
+    <div>
+      <strong>After the interview</strong>
+      <span>Note difficult questions • Improve weak topics • Follow up professionally</span>
+    </div>
+  </div>
+
+</section>
+
 
 
 <!-- =====================================================
