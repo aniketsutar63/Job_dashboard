@@ -1,8 +1,14 @@
 module.exports = async (req, res) => {
   try {
-    const cleanJobKey = process.env.CLEANJOBDATA_API_KEY;
+    // ==================================================
+    // 1. Environment Variables
+    // ==================================================
 
-    const rawSupabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const cleanJobKey = process.env.CLEANJOBDATA_API_KEY;
+    const supabaseUrl = (process.env.NEXT_PUBLIC_SUPABASE_URL || "")
+      .trim()
+      .replace(/\/+$/, "");
+
     const supabaseKey = process.env.SUPABASE_SECRET_KEY;
 
     if (!cleanJobKey) {
@@ -12,68 +18,68 @@ module.exports = async (req, res) => {
       });
     }
 
-    if (!rawSupabaseUrl || !supabaseKey) {
+    if (!supabaseUrl || !supabaseKey) {
       return res.status(500).json({
         success: false,
         error: "Supabase environment variables are missing",
-        supabaseUrlFound: !!rawSupabaseUrl,
+        supabaseUrlFound: !!supabaseUrl,
         supabaseKeyFound: !!supabaseKey
       });
     }
-
-    const supabaseUrl = rawSupabaseUrl
-      .trim()
-      .replace(/\/+$/, "");
 
     const supabaseRestUrl = supabaseUrl.endsWith("/rest/v1")
       ? supabaseUrl
       : `${supabaseUrl}/rest/v1`;
 
-    // --------------------------------------------------
-    // 1. Get Java jobs from CleanJobData
-    // Broad search: India + Java
-    // We enforce the 24-hour rule ourselves below.
-    // --------------------------------------------------
+
+    // ==================================================
+    // 2. Get NEW Java Jobs from CleanJobData
+    // ==================================================
 
     const params = new URLSearchParams({
-      title: "Java",
       country_id: "101",
-      limit: "50",
+      title: "Java",
+      experience_level: "EN,MI",
+      created_max_age: "24h",
+      limit: "20",
       sort_by: "published",
       include_expired: "false",
       extra_fields: "description"
     });
 
-    const response = await fetch(
+    const cleanJobResponse = await fetch(
       `https://api.cleanjobdata.com/jobs?${params.toString()}`,
       {
+        method: "GET",
         headers: {
-          Authorization: `Bearer ${cleanJobKey}`
+          Authorization: `Bearer ${cleanJobKey}`,
+          Accept: "application/json"
         }
       }
     );
 
-    if (!response.ok) {
-      const errorText = await response.text();
+    if (!cleanJobResponse.ok) {
+      const errorText = await cleanJobResponse.text();
 
       return res.status(
-        response.status === 429 ? 429 : 502
+        cleanJobResponse.status === 429 ? 429 : 502
       ).json({
         success: false,
-        error: `CleanJob API error: ${response.status}`,
+        error: `CleanJobData API error: ${cleanJobResponse.status}`,
         details: errorText
       });
     }
 
-    const result = await response.json();
+    const result = await cleanJobResponse.json();
 
     const allJobs = Array.isArray(result.data)
       ? result.data
       : [];
 
-    // --------------------------------------------------
-    // 2. Remove duplicate jobs
-    // --------------------------------------------------
+
+    // ==================================================
+    // 3. Remove Duplicate API Results
+    // ==================================================
 
     const uniqueJobs = Array.from(
       new Map(
@@ -81,132 +87,169 @@ module.exports = async (req, res) => {
       ).values()
     );
 
-    // --------------------------------------------------
-    // 3. Keep jobs published within last 24 hours
-    // --------------------------------------------------
 
-    const now = Date.now();
+    // ==================================================
+    // 4. Filter Jobs for YOUR Profile
+    // ==================================================
 
-    const twentyFourHoursAgo =
-      now - (24 * 60 * 60 * 1000);
-
-    const recentJobs = uniqueJobs.filter(job => {
-      if (!job.published) {
+    const filteredJobs = uniqueJobs.filter(job => {
+      if (!job || job.is_active === false) {
         return false;
       }
 
-      const publishedTime =
-        new Date(job.published).getTime();
+      const title = String(job.title || "").toLowerCase();
 
-      return (
-        !Number.isNaN(publishedTime) &&
-        publishedTime >= twentyFourHoursAgo &&
-        publishedTime <= now
-      );
-    });
+      const description = String(
+        job.description || ""
+      ).toLowerCase();
 
-    // --------------------------------------------------
-    // 4. Filter relevant India Java jobs
-    // --------------------------------------------------
+      const location = String(
+        job.location || ""
+      ).toLowerCase();
 
-    const filteredJobs = recentJobs.filter(job => {
-      if (job.is_active === false) {
-        return false;
-      }
 
-      const title =
-        (job.title || "").toLowerCase();
+      // --------------------------------------------------
+      // Java requirement
+      // --------------------------------------------------
 
-      const location =
-        (job.location || "").toLowerCase();
-
-      const description =
-        (job.description || "").toLowerCase();
-
-      // Must contain Java
-      const hasJava =
+      const javaRelated =
         title.includes("java") ||
         description.includes("java");
 
-      if (!hasJava) {
+      if (!javaRelated) {
         return false;
       }
 
-      // India locations
+
+      // --------------------------------------------------
+      // Target job titles
+      // --------------------------------------------------
+
+      const targetRole =
+        title.includes("java developer") ||
+        title.includes("java engineer") ||
+        title.includes("java software engineer") ||
+        title.includes("java backend") ||
+        title.includes("backend developer") ||
+        title.includes("backend engineer") ||
+        title.includes("full stack java") ||
+        title.includes("java full stack") ||
+        title.includes("software developer") ||
+        title.includes("software engineer") ||
+        title.includes("associate software engineer") ||
+        title.includes("associate developer") ||
+        title.includes("junior java") ||
+        title.includes("application developer");
+
+      if (!targetRole) {
+        return false;
+      }
+
+
+      // --------------------------------------------------
+      // Exclude senior / lead / management positions
+      // --------------------------------------------------
+
+      const excludedRole =
+        title.includes("senior") ||
+        title.includes("sr.") ||
+        title.includes("sr ") ||
+        title.includes("lead") ||
+        title.includes("principal") ||
+        title.includes("architect") ||
+        title.includes("manager") ||
+        title.includes("director") ||
+        title.includes("head of") ||
+        title.includes("staff engineer") ||
+        title.includes("expert");
+
+      if (excludedRole) {
+        return false;
+      }
+
+
+      // --------------------------------------------------
+      // Location
+      //
+      // Keep:
+      // Pune
+      // Remote
+      // Hybrid
+      // India
+      // --------------------------------------------------
+
+      const isPune =
+        location.includes("pune");
+
+      const isRemote =
+        job.has_remote === true ||
+        location.includes("remote") ||
+        String(job.remote_type || "").length > 0;
+
       const isIndia =
         location.includes("india") ||
         location.includes("pune") ||
+        location.includes("mumbai") ||
         location.includes("bangalore") ||
         location.includes("bengaluru") ||
         location.includes("hyderabad") ||
-        location.includes("mumbai") ||
+        location.includes("chennai") ||
         location.includes("delhi") ||
         location.includes("noida") ||
         location.includes("gurgaon") ||
         location.includes("gurugram") ||
-        location.includes("chennai") ||
         location.includes("kolkata") ||
         location.includes("ahmedabad") ||
-        location.includes("indore") ||
-        location.includes("coimbatore");
+        location.includes("indore");
 
-      if (!isIndia) {
+      // Accept Pune, Remote or Indian locations
+      if (!isPune && !isRemote && !isIndia) {
         return false;
       }
 
-      // Relevant Java development roles
-      const relevantRole =
-        title.includes("java") ||
-        title.includes("software engineer") ||
-        title.includes("software developer") ||
-        title.includes("backend developer") ||
-        title.includes("backend engineer") ||
-        title.includes("full stack") ||
-        title.includes("spring boot") ||
-        title.includes("application developer") ||
-        title.includes("associate software engineer") ||
-        title.includes("associate developer") ||
-        title.includes("junior developer");
 
-      if (!relevantRole) {
-        return false;
-      }
+      // --------------------------------------------------
+      // Extra check for completely unrelated roles
+      // --------------------------------------------------
 
-      // Exclude clearly senior roles
-      const seniorRole =
-        title.includes("senior") ||
-        title.includes("sr.") ||
-        title.includes("lead") ||
-        title.includes("principal") ||
-        title.includes("architect") ||
-        title.includes("director") ||
-        title.includes("manager") ||
-        title.includes("head of");
+      const unrelated =
+        title.includes("php") ||
+        title.includes(".net") ||
+        title.includes("python developer") ||
+        title.includes("data scientist") ||
+        title.includes("devops engineer") ||
+        title.includes("network engineer") ||
+        title.includes("qa engineer") ||
+        title.includes("test engineer") ||
+        title.includes("embedded engineer") ||
+        title.includes("hardware engineer");
 
-      if (seniorRole) {
+      if (unrelated) {
         return false;
       }
 
       return true;
     });
 
-    // --------------------------------------------------
-    // 5. Get existing jobs from Supabase
-    // --------------------------------------------------
+
+    // ==================================================
+    // 5. Read Existing Jobs from Supabase
+    // ==================================================
 
     const existingResponse = await fetch(
-      `${supabaseRestUrl}/jobs?select=apply-url`,
+      `${supabaseRestUrl}/jobs?select=id,apply_url`,
       {
+        method: "GET",
         headers: {
           apikey: supabaseKey,
-          Authorization: `Bearer ${supabaseKey}`
+          Authorization: `Bearer ${supabaseKey}`,
+          Accept: "application/json"
         }
       }
     );
 
     if (!existingResponse.ok) {
-      const errorText =
-        await existingResponse.text();
+      const errorText = await existingResponse.text();
 
       return res.status(502).json({
         success: false,
@@ -215,32 +258,47 @@ module.exports = async (req, res) => {
       });
     }
 
-    const existingJobs =
-      await existingResponse.json();
+    const existingJobs = await existingResponse.json();
 
-    const existingUrls = new Set(
+    const existingIds = new Set(
       existingJobs
-        .map(job => job["apply-url"])
+        .map(job => Number(job.id))
         .filter(Boolean)
     );
 
-    // --------------------------------------------------
-    // 6. Prepare NEW jobs
-    // --------------------------------------------------
+    const existingUrls = new Set(
+      existingJobs
+        .map(job => job.apply_url)
+        .filter(Boolean)
+    );
+
+
+    // ==================================================
+    // 6. Prepare New Jobs
+    // ==================================================
 
     const newJobs = filteredJobs
       .filter(job => {
-        const url =
-          job.application_url;
+        const jobId = Number(job.id);
+        const applicationUrl = job.application_url;
 
-        return (
-          url &&
-          !existingUrls.has(url)
-        );
+        // Don't insert duplicates
+        if (existingIds.has(jobId)) {
+          return false;
+        }
+
+        if (
+          applicationUrl &&
+          existingUrls.has(applicationUrl)
+        ) {
+          return false;
+        }
+
+        return true;
       })
       .map(job => ({
-        "created-at":
-          new Date().toISOString(),
+        // DO NOT insert created_at.
+        // Supabase automatically creates it.
 
         title:
           job.title ||
@@ -249,7 +307,7 @@ module.exports = async (req, res) => {
         company:
           job.company?.name ||
           job.company?.display_name ||
-          "Unknown",
+          "Company Not Specified",
 
         location:
           job.location ||
@@ -260,12 +318,12 @@ module.exports = async (req, res) => {
             job.experience_level
           ),
 
-        "posted-at":
+        posted_at:
           job.published ||
           new Date().toISOString(),
 
         category:
-          "Java",
+          "Java / Backend",
 
         fit_score:
           calculateFitScore(job),
@@ -273,22 +331,26 @@ module.exports = async (req, res) => {
         summary:
           createSummary(job),
 
-        "why-match":
+        why_match:
           createWhyMatch(job),
 
-        "missing-skills":
+        missing_skills:
           createMissingSkills(job),
 
-        "apply-url":
-          job.application_url,
+        apply_url:
+          job.application_url ||
+          "",
 
         source:
           "CleanJobData"
       }));
 
-    // --------------------------------------------------
-    // 7. Insert new jobs
-    // --------------------------------------------------
+
+    // ==================================================
+    // 7. Insert New Jobs into Supabase
+    // ==================================================
+
+    let insertedCount = 0;
 
     if (newJobs.length > 0) {
       const insertResponse = await fetch(
@@ -298,12 +360,15 @@ module.exports = async (req, res) => {
 
           headers: {
             apikey: supabaseKey,
+
             Authorization:
               `Bearer ${supabaseKey}`,
+
             "Content-Type":
               "application/json",
+
             Prefer:
-              "return=representation"
+              "return=minimal"
           },
 
           body:
@@ -318,14 +383,18 @@ module.exports = async (req, res) => {
         return res.status(502).json({
           success: false,
           error: "Supabase insert failed",
-          details: errorText
+          details: errorText,
+          jobsPrepared: newJobs.length
         });
       }
+
+      insertedCount = newJobs.length;
     }
 
-    // --------------------------------------------------
-    // 8. Success
-    // --------------------------------------------------
+
+    // ==================================================
+    // 8. Final Response
+    // ==================================================
 
     return res.status(200).json({
       success: true,
@@ -336,20 +405,23 @@ module.exports = async (req, res) => {
       unique:
         uniqueJobs.length,
 
-      recent_24h:
-        recentJobs.length,
-
-      filtered:
+      relevant:
         filteredJobs.length,
 
-      inserted:
+      prepared:
         newJobs.length,
 
+      inserted:
+        insertedCount,
+
       message:
-        "Daily Java job update completed"
+        insertedCount > 0
+          ? "New Java jobs added successfully"
+          : "No new matching Java jobs found in the last 24 hours"
     });
 
   } catch (error) {
+
     return res.status(500).json({
       success: false,
       error: error.message
@@ -358,11 +430,12 @@ module.exports = async (req, res) => {
 };
 
 
-// --------------------------------------------------
-// Format experience
-// --------------------------------------------------
+// ======================================================
+// EXPERIENCE
+// ======================================================
 
 function formatExperience(level) {
+
   if (!level) {
     return "0–3 years";
   }
@@ -390,40 +463,60 @@ function formatExperience(level) {
 }
 
 
-// --------------------------------------------------
-// Fit score
-// --------------------------------------------------
+// ======================================================
+// FIT SCORE
+// ======================================================
 
 function calculateFitScore(job) {
+
   const text = `
     ${job.title || ""}
     ${job.description || ""}
-    ${job.experience_level || ""}
   `.toLowerCase();
 
-  let score = 60;
+  let score = 50;
+
 
   if (text.includes("java")) {
-    score += 10;
+    score += 15;
   }
 
   if (text.includes("spring boot")) {
     score += 10;
   }
 
-  if (text.includes("spring")) {
+  if (
+    text.includes("spring framework") ||
+    text.includes("spring mvc")
+  ) {
     score += 5;
   }
 
-  if (text.includes("rest")) {
+  if (
+    text.includes("rest api") ||
+    text.includes("restful")
+  ) {
     score += 5;
   }
 
-  if (text.includes("hibernate")) {
+  if (
+    text.includes("mysql") ||
+    text.includes("sql")
+  ) {
+    score += 4;
+  }
+
+  if (
+    text.includes("hibernate") ||
+    text.includes("jpa")
+  ) {
     score += 3;
   }
 
-  if (text.includes("mysql")) {
+  if (
+    text.includes("spring security") ||
+    text.includes("jwt")
+  ) {
     score += 2;
   }
 
@@ -443,13 +536,14 @@ function calculateFitScore(job) {
 }
 
 
-// --------------------------------------------------
-// Summary
-// --------------------------------------------------
+// ======================================================
+// SUMMARY
+// ======================================================
 
 function createSummary(job) {
+
   const description =
-    (job.description || "")
+    String(job.description || "")
       .replace(/<[^>]*>/g, " ")
       .replace(/\s+/g, " ")
       .trim();
@@ -457,7 +551,6 @@ function createSummary(job) {
   if (!description) {
     return `${job.title || "Java Developer"} opportunity at ${
       job.company?.name ||
-      job.company?.display_name ||
       "the company"
     }.`;
   }
@@ -466,17 +559,19 @@ function createSummary(job) {
 }
 
 
-// --------------------------------------------------
-// Why match
-// --------------------------------------------------
+// ======================================================
+// WHY MATCH
+// ======================================================
 
 function createWhyMatch(job) {
+
   const text = `
     ${job.title || ""}
     ${job.description || ""}
   `.toLowerCase();
 
   const matches = [];
+
 
   if (text.includes("java")) {
     matches.push("Java");
@@ -486,19 +581,18 @@ function createWhyMatch(job) {
     matches.push("Spring Boot");
   }
 
-  if (text.includes("rest")) {
+  if (
+    text.includes("rest api") ||
+    text.includes("restful")
+  ) {
     matches.push("REST APIs");
   }
 
   if (
-    text.includes("sql") ||
-    text.includes("mysql")
+    text.includes("mysql") ||
+    text.includes("sql")
   ) {
     matches.push("SQL/MySQL");
-  }
-
-  if (text.includes("react")) {
-    matches.push("React");
   }
 
   if (
@@ -508,25 +602,43 @@ function createWhyMatch(job) {
     matches.push("Hibernate/JPA");
   }
 
+  if (
+    text.includes("spring security") ||
+    text.includes("jwt")
+  ) {
+    matches.push("Spring Security/JWT");
+  }
+
+  if (text.includes("react")) {
+    matches.push("React");
+  }
+
+  if (text.includes("git")) {
+    matches.push("Git");
+  }
+
+
   if (matches.length === 0) {
-    return "Matches the user's Java development profile.";
+    return "Matches the Java development profile.";
   }
 
   return `Matches profile skills: ${matches.join(", ")}.`;
 }
 
 
-// --------------------------------------------------
-// Missing skills
-// --------------------------------------------------
+// ======================================================
+// MISSING SKILLS
+// ======================================================
 
 function createMissingSkills(job) {
+
   const text = `
     ${job.title || ""}
     ${job.description || ""}
   `.toLowerCase();
 
   const missing = [];
+
 
   if (!text.includes("docker")) {
     missing.push("Docker");
@@ -542,6 +654,14 @@ function createMissingSkills(job) {
 
   if (!text.includes("microservices")) {
     missing.push("Microservices");
+  }
+
+  if (!text.includes("junit")) {
+    missing.push("JUnit");
+  }
+
+  if (!text.includes("kafka")) {
+    missing.push("Kafka");
   }
 
   return missing.join(", ");
