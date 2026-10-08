@@ -713,6 +713,29 @@ footer{
   }
 </style>
 
+
+<style>
+  /* Four-colour dashboard accents; existing layout and API code are preserved */
+  :root { --accent: #315EEA; --green: #0F8B78; }
+  .kicker, .eyebrow { color: #315EEA; }
+  .apply { background-color: #315EEA; }
+  .score { color: #0F8B78; }
+  .apply-first { background: #E2F5EF; color: #0F766E; }
+  .good-match { background: #FFF0D8; color: #9A5700; }
+  .stretch-role { background: #F0E8FF; color: #6B3DB8; }
+  .tip-number { background: #F0E8FF; color: #6B3DB8; }
+  .note { border-left-color: #D97706; background: #FFF8E8; }
+  .role:nth-child(4n+1) { border-top: 4px solid #315EEA; }
+  .role:nth-child(4n+2) { border-top: 4px solid #0F8B78; }
+  .role:nth-child(4n+3) { border-top: 4px solid #7952C7; }
+  .role:nth-child(4n) { border-top: 4px solid #D97706; }
+  .job-card:nth-child(4n+1) { border-top: 4px solid #315EEA; }
+  .job-card:nth-child(4n+2) { border-top: 4px solid #0F8B78; }
+  .job-card:nth-child(4n+3) { border-top: 4px solid #7952C7; }
+  .job-card:nth-child(4n) { border-top: 4px solid #D97706; }
+  #jobs { margin-top: 14px; }
+</style>
+
 </head>
 
 
@@ -1043,6 +1066,11 @@ Stretch Role (0)
 
 
 
+
+<!-- Live jobs are rendered here by loadJobs() from /api/job-data -->
+<section id="jobs" class="grid" aria-live="polite">
+  <div class="note">Loading latest Java jobs...</div>
+</section>
 
 <!-- =====================================================
      COMMON RECRUITER MESSAGE
