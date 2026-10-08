@@ -428,54 +428,6 @@ button,
 .apply:hover{
   opacity:.9;
 }
-
-
-/* =========================================================
-   PRIORITY
-   ========================================================= */
-
-.priority{
-  display:grid;
-
-  grid-template-columns:1fr auto auto;
-
-  gap:14px;
-
-  align-items:center;
-
-  background:#fff;
-
-  border:1px solid var(--line);
-
-  padding:13px 15px;
-
-  border-radius:12px;
-
-  margin:8px 0;
-}
-
-
-.priority b{
-  color:var(--accent);
-}
-
-
-.priority span{
-  color:var(--muted);
-
-  font-size:12px;
-}
-
-
-.priority a{
-  color:var(--accent);
-
-  font-weight:750;
-
-  text-decoration:none;
-}
-
-
 /* =========================================================
    MESSAGES
    ========================================================= */
@@ -597,6 +549,168 @@ footer{
 
 }
 
+</style>
+
+
+<style>
+  /* ================= INTERVIEW DASHBOARD UI ================= */
+
+  .section-title {
+    margin-top: 42px;
+  }
+
+  .interview-dashboard {
+    margin: 18px 0 42px;
+  }
+
+  .interview-hero {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 24px;
+    padding: 28px;
+    border-radius: 22px;
+    background: linear-gradient(135deg, #eef4ff 0%, #f8fbff 55%, #ffffff 100%);
+    border: 1px solid #dbe6ff;
+    box-shadow: 0 14px 35px rgba(25, 62, 120, 0.10);
+  }
+
+  .interview-hero h3 {
+    margin: 7px 0 8px;
+    font-size: clamp(24px, 3vw, 34px);
+  }
+
+  .interview-hero p {
+    margin: 0;
+    max-width: 720px;
+  }
+
+  .eyebrow {
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 1.5px;
+    color: #2563eb;
+  }
+
+  .interview-score {
+    min-width: 120px;
+    text-align: center;
+    padding: 18px;
+    border-radius: 18px;
+    background: #ffffff;
+    border: 1px solid #dce6f7;
+    box-shadow: 0 8px 22px rgba(25, 62, 120, 0.08);
+  }
+
+  .interview-score span,
+  .interview-score small {
+    display: block;
+    font-size: 12px;
+  }
+
+  .interview-score strong {
+    display: block;
+    font-size: 44px;
+    line-height: 1;
+    margin: 7px 0;
+    color: #2563eb;
+  }
+
+  .interview-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+    margin-top: 18px;
+  }
+
+  .tip-card {
+    position: relative;
+    padding: 22px;
+    border: 1px solid #e1e8f3;
+    border-radius: 18px;
+    background: #fff;
+    box-shadow: 0 8px 24px rgba(25, 62, 120, 0.06);
+    transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease;
+  }
+
+  .tip-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 14px 30px rgba(25, 62, 120, 0.11);
+    border-color: #c8d8f7;
+  }
+
+  .tip-card h3 {
+    margin: 0 0 8px;
+    padding-right: 42px;
+  }
+
+  .tip-card p {
+    margin: 0 0 12px;
+  }
+
+  .tip-card b {
+    font-size: 13px;
+  }
+
+  .tip-number {
+    position: absolute;
+    top: 18px;
+    right: 18px;
+    width: 32px;
+    height: 32px;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    background: #eef4ff;
+    color: #2563eb;
+    font-size: 12px;
+    font-weight: 800;
+  }
+
+  .interview-quick-check {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 14px;
+    margin-top: 18px;
+  }
+
+  .interview-quick-check > div {
+    padding: 18px;
+    border-radius: 16px;
+    background: #f8fafc;
+    border: 1px solid #e5eaf1;
+  }
+
+  .interview-quick-check strong,
+  .interview-quick-check span {
+    display: block;
+  }
+
+  .interview-quick-check strong {
+    margin-bottom: 6px;
+  }
+
+  .interview-quick-check span {
+    font-size: 13px;
+    line-height: 1.55;
+  }
+
+  @media (max-width: 800px) {
+    .interview-grid,
+    .interview-quick-check {
+      grid-template-columns: 1fr;
+    }
+
+    .interview-hero {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
+    .interview-score {
+      width: 100%;
+      box-sizing: border-box;
+    }
+  }
 </style>
 
 </head>
@@ -872,259 +986,6 @@ and Spring are emphasized.
 
 </section>
 
-
-
-<!-- =====================================================
-     TOP 10 PRIORITY
-     ===================================================== -->
-
-<h2>
-Top 10 priority applications
-</h2>
-
-
-<section class="panel">
-
-<p>
-The priority list below is retained as your original
-research/reference list. New live jobs appear in the
-"All Live Jobs" section below.
-</p>
-
-
-<div class="priority">
-
-<div>
-<b>#1</b>
-JAVA Developer (1 to 3 yrs Exp)
-</div>
-
-<span>
-Sparken IT Solutions · 93/100
-</span>
-
-<a
-href="https://in.indeed.com/viewjob?jk=027223f352ecd6e1"
-target="_blank"
-rel="noopener"
->
-Apply ↗
-</a>
-
-</div>
-
-
-
-<div class="priority">
-
-<div>
-<b>#2</b>
-Full Stack Developer (WFO)
-</div>
-
-<span>
-Mithi Software Technologies · 91/100
-</span>
-
-<a
-href="https://in.indeed.com/q-mithi-software-technologies-pvt.-ltd.-jobs.html"
-target="_blank"
-rel="noopener"
->
-Apply ↗
-</a>
-
-</div>
-
-
-
-<div class="priority">
-
-<div>
-<b>#3</b>
-SDE 1 Backend
-</div>
-
-<span>
-eshopbox · 90/100
-</span>
-
-<a
-href="https://in.indeed.com/viewjob?jk=0216b203dd7a587c"
-target="_blank"
-rel="noopener"
->
-Apply ↗
-</a>
-
-</div>
-
-
-
-<div class="priority">
-
-<div>
-<b>#4</b>
-Java Developer
-</div>
-
-<span>
-MindWorx · 89/100
-</span>
-
-<a
-href="https://in.indeed.com/viewjob?jk=b40748a4b1b253c2"
-target="_blank"
-rel="noopener"
->
-Apply ↗
-</a>
-
-</div>
-
-
-
-<div class="priority">
-
-<div>
-<b>#5</b>
-Software Engineer (Java)
-</div>
-
-<span>
-Diksha Technologies · 88/100
-</span>
-
-<a
-href="https://in.indeed.com/viewjob?jk=a3193edd9369ba18"
-target="_blank"
-rel="noopener"
->
-Apply ↗
-</a>
-
-</div>
-
-
-
-<div class="priority">
-
-<div>
-<b>#6</b>
-Java Developer
-</div>
-
-<span>
-ALLPS · 88/100
-</span>
-
-<a
-href="https://wellfound.com/jobs/3739528-java-developer"
-target="_blank"
-rel="noopener"
->
-Apply ↗
-</a>
-
-</div>
-
-
-
-<div class="priority">
-
-<div>
-<b>#7</b>
-Backend Engineer
-</div>
-
-<span>
-WeKnow Group · 87/100
-</span>
-
-<a
-href="https://wellfound.com/jobs/3721618-backend-engineer"
-target="_blank"
-rel="noopener"
->
-Apply ↗
-</a>
-
-</div>
-
-
-
-<div class="priority">
-
-<div>
-<b>#8</b>
-Software Developer (Java)
-</div>
-
-<span>
-Decipher Zone · 86/100
-</span>
-
-<a
-href="https://wellfound.com/jobs/4689507-software-developer"
-target="_blank"
-rel="noopener"
->
-Apply ↗
-</a>
-
-</div>
-
-
-
-<div class="priority">
-
-<div>
-<b>#9</b>
-Custom Software Engineer – Java Standard Edition
-</div>
-
-<span>
-Accenture · 84/100
-</span>
-
-<a
-href="https://in.indeed.com/viewjob?jk=07640015497ba8ae"
-target="_blank"
-rel="noopener"
->
-Apply ↗
-</a>
-
-</div>
-
-
-
-<div class="priority">
-
-<div>
-<b>#10</b>
-Backend Developer
-</div>
-
-<span>
-Tracxn · 84/100
-</span>
-
-<a
-href="https://wellfound.com/jobs/4632678-backend-developer"
-target="_blank"
-rel="noopener"
->
-Apply ↗
-</a>
-
-</div>
-
-
-</section>
-
-
-
 <!-- =====================================================
      LIVE JOBS
      ===================================================== -->
@@ -1180,362 +1041,321 @@ Stretch Role (0)
 
 
 
-<section
-class="grid"
-id="jobs"
->
-
-<div
-id="loadingJobs"
-class="note"
->
-Loading latest Java jobs...
-</div>
-
-</section>
 
 
 
 <!-- =====================================================
-     RESUME IMPROVEMENTS
+     COMMON RECRUITER MESSAGE
      ===================================================== -->
 
 <h2>
-Resume improvements for the top 10
+Common Recruiter / Hiring Manager Message
 </h2>
-
 
 <section class="panel">
 
-<ol>
+<p>
+Use this common message when contacting recruiters or hiring managers
+on LinkedIn, WhatsApp or other professional platforms.
+</p>
 
-<li>
+<div class="message">
 
-<b>Sparken / MindWorx / eShopbox:</b>
+<p id="commonRecruiterMessage">
+Hi, I’m Aniket Sutar, a Java Developer with 1.5+ years of experience
+in Java, Spring Boot, REST APIs, MySQL and Hibernate/JPA.
 
-Add Spring MVC, Spring Framework, Hibernate,
-RESTful Web Services, Maven, J2EE, MySQL
-and Tomcat where accurate.
+I’m currently looking for opportunities in Java Development,
+Java Backend Development, Spring Boot or Full Stack Java roles.
+I’m based in Pune and am open to onsite, hybrid, remote and flexible
+shift opportunities.
 
-</li>
+I would be grateful if you could let me know if there are any suitable
+openings matching my profile. I’m happy to share my resume for your
+reference.
 
+Thank you for your time.
+</p>
 
-<li>
+<button
+  onclick="copyMessage('commonRecruiterMessage')"
+>
+Copy Message
+</button>
 
-<b>Mithi:</b>
+</div>
 
-Add AWS, Docker and Angular only if you can
-substantiate hands-on exposure; otherwise
-emphasize React and database integration.
-
-</li>
-
-
-<li>
-
-<b>Diksha:</b>
-
-Strengthen one backend bullet with API ownership,
-secure coding, CI/CD and a measurable outcome
-if accurate.
-
-</li>
-
-
-<li>
-
-<b>WeKnow / ALLPS:</b>
-
-Lead with Java + Spring Boot + REST + MySQL
-+ Git + debugging and third-party API integration
-if genuinely done.
-
-</li>
+</section>
 
 
-<li>
+<!-- =====================================================
+     COMMON EMAIL FORMAT
+     ===================================================== -->
 
-<b>Decipher Zone:</b>
+<h2>
+Common Job Application Email
+</h2>
 
-Use "Java Backend Developer" prominently and
-emphasize Spring Boot, REST, JPA/Hibernate,
-SQL and testing.
+<section class="panel">
 
-</li>
+<div class="message">
+
+<div class="message-head">
+
+<b>
+Subject: Application for Java Developer / Software Developer Position
+</b>
+
+</div>
+
+<p id="commonEmail">
+
+Dear Hiring Manager,
+
+I am writing to express my interest in Java Developer / Software Developer
+opportunities at your organization.
+
+I have 1.5+ years of experience in Java development with hands-on experience
+in Core Java, OOP, Collections, Spring Boot, REST APIs, MySQL, Hibernate/JPA,
+Spring Security/JWT and React.js. I have worked on backend and full-stack
+applications involving API development, database integration and
+application security.
+
+I am currently looking for opportunities in Java Developer, Java Backend
+Developer, Spring Boot Developer, Software Developer or Full Stack Java
+roles. I am based in Pune and am open to onsite, hybrid, remote and
+flexible shift opportunities.
+
+I have attached my resume for your reference. I would appreciate the
+opportunity to discuss any suitable position matching my profile.
+
+Thank you for your time and consideration.
+
+Best regards,
+Aniket Sutar
+Java Developer
+Pune, Maharashtra
+</p>
+
+<button
+  onclick="copyMessage('commonEmail')"
+>
+Copy Email
+</button>
+
+</div>
+
+</section>
 
 
-<li>
+<!-- =====================================================
+     COMMON COVER LETTER
+     ===================================================== -->
 
-<b>Quick Heal:</b>
+<h2>
+Common Cover Letter
+</h2>
 
-Add Angular, unit testing, Kafka, MongoDB and AWS
-only where supported; surface Spring Security/JWT.
+<section class="panel">
 
-</li>
+<div class="message">
 
+<p id="commonCoverLetter">
 
-<li>
+Dear Hiring Manager,
 
-<b>SAP Fioneer:</b>
+I am writing to apply for the Java Developer / Software Developer position
+at your organization. With 1.5+ years of professional experience in Java
+development, I am interested in contributing my backend and full-stack
+development skills to your team.
 
-Add a Backend & Cloud line for Microservices,
-CI/CD, Docker and AWS/Azure as you gain evidence.
+My technical experience includes Core Java, OOP, Collections Framework,
+Spring Boot, REST APIs, MySQL, Hibernate/JPA, Spring Security/JWT,
+React.js, Git and API integration. I have experience developing
+database-driven applications, building REST APIs, implementing
+authentication and authorization, and working on backend application
+features.
 
-</li>
+I have worked on projects involving Java, Spring Boot, REST APIs, MySQL
+and React.js, which have strengthened my ability to understand
+requirements, develop features, troubleshoot issues and work with
+application and database integration.
 
+I am particularly interested in opportunities where I can continue
+developing my Java and Spring Boot expertise while contributing to
+real-world software products and backend systems. I am based in Pune
+and am open to onsite, hybrid, remote and flexible shift opportunities.
 
-<li>
+I would welcome the opportunity to discuss how my skills and experience
+can contribute to your organization. Please find my resume attached for
+your consideration.
 
-<b>Deloitte:</b>
+Thank you for your time and consideration. I look forward to hearing
+from you.
 
-Add Angular/TypeScript, JUnit/Mockito,
-Swagger/OpenAPI, Docker/Kubernetes and Kafka
-if substantiated.
+Sincerely,
 
-</li>
+Aniket Sutar
+Java Developer
+Pune, Maharashtra
+</p>
 
+<button
+  onclick="copyMessage('commonCoverLetter')"
+>
+Copy Cover Letter
+</button>
 
-<li>
-
-<b>Accenture / Barclays / Mastercard:</b>
-
-Add Java 17/21, microservices, CI/CD,
-JUnit/Mockito, Maven, Docker/Kubernetes
-and cloud after gaining evidence.
-
-</li>
-
-
-<li>
-
-<b>Quorum:</b>
-
-Add PL/SQL, Jenkins and AWS/Kubernetes only
-if supportable; emphasize Collections,
-multithreading, exceptions and SQL now.
-
-</li>
-
-</ol>
+</div>
 
 </section>
 
 
 
 <!-- =====================================================
-     RECRUITER MESSAGES
+     INTERVIEW PREPARATION
      ===================================================== -->
 
-<h2>
-Recruiter / hiring-manager messages — top 5
+<h2 class="section-title">
+  Interview Tips to Crack the Interview
 </h2>
 
-
-<section>
-
-
-<div class="message">
-
-<div class="message-head">
-
-<b>
-Sparken IT Solutions
-</b>
-
-<span>
-JAVA Developer
-</span>
-
-</div>
-
-
-<p id="m0">
-
-Hi, I'm Aniket Sutar, a Java Developer with
-1.5+ years of experience in Java, Spring Boot,
-REST APIs, MySQL and Hibernate/JPA.
-
-I'm based in Pune and noticed your JAVA Developer
-opening. The Java/Spring/Hibernate and REST
-requirements closely match my experience.
-
-I'd be glad to share my resume and discuss
-the opportunity.
-
-</p>
-
-
-<button
-onclick="copyMessage('m0')"
->
-Copy message
-</button>
-
-</div>
-
-
-
-<div class="message">
-
-<div class="message-head">
-
-<b>
-Mithi Software Technologies
-</b>
-
-<span>
-Full Stack Developer
-</span>
-
-</div>
-
-
-<p id="m1">
-
-Hi, I'm Aniket Sutar, a Pune-based Java Developer
-with 1.5+ years of backend and full-stack experience
-using Java, Spring Boot, REST APIs, MySQL and React.js.
-
-I came across the Full Stack Developer opening and
-the Java/Hibernate/SQL and frontend requirements
-align well with my background.
-
-I'd appreciate the opportunity to connect.
-
-</p>
-
-
-<button
-onclick="copyMessage('m1')"
->
-Copy message
-</button>
-
-</div>
-
-
-
-<div class="message">
-
-<div class="message-head">
-
-<b>
-eshopbox
-</b>
-
-<span>
-SDE 1 Backend
-</span>
-
-</div>
-
-
-<p id="m2">
-
-Hi, I'm Aniket Sutar, a Java Developer with 1.5+
-years of backend experience in Spring Boot,
-REST APIs, MySQL, JPA/Hibernate and Git.
-
-I noticed the SDE 1 Backend opening at eShopbox
-and found a strong overlap with my experience
-in backend APIs and frontend-backend integration.
-
-I'd be happy to share my resume.
-
-</p>
-
-
-<button
-onclick="copyMessage('m2')"
->
-Copy message
-</button>
-
-</div>
-
-
-
-<div class="message">
-
-<div class="message-head">
-
-<b>
-Diksha Technologies
-</b>
-
-<span>
-Software Engineer (Java)
-</span>
-
-</div>
-
-
-<p id="m3">
-
-Hi, I'm Aniket Sutar, a Pune-based Java Developer
-with 1.5+ years of experience building
-Java/Spring Boot applications, REST APIs
-and database-backed services.
-
-Your Software Engineer (Java) role caught my
-attention because of its API-driven development
-and secure software focus.
-
-I'd appreciate the chance to discuss how my
-background could fit the team.
-
-</p>
-
-
-<button
-onclick="copyMessage('m3')"
->
-Copy message
-</button>
-
-</div>
-
-
-
-<div class="message">
-
-<div class="message-head">
-
-<b>
-WeKnow Group
-</b>
-
-<span>
-Backend Engineer
-</span>
-
-</div>
-
-
-<p id="m4">
-
-Hi, I'm Aniket Sutar, a Java Developer with
-1.5+ years of experience in Java, Spring Boot,
-REST APIs, MySQL and Git.
-
-I'm interested in your Backend Engineer
-opportunity because the 1–2 year experience
-range and Java/Spring Boot backend focus
-align closely with my profile.
-
-I'd be glad to connect and share my resume.
-
-</p>
-
-
-<button
-onclick="copyMessage('m4')"
->
-Copy message
-</button>
-
-</div>
-
+<section class="interview-dashboard">
+
+  <div class="interview-hero">
+    <div>
+      <span class="eyebrow">INTERVIEW MODE</span>
+      <h3>Prepare smart. Answer clearly. Get selected.</h3>
+      <p>
+        A practical quick-reference for Java Developer, Spring Boot,
+        Backend and Full Stack Java interviews.
+      </p>
+    </div>
+    <div class="interview-score">
+      <span>Ready Checklist</span>
+      <strong>10</strong>
+      <small>key areas</small>
+    </div>
+  </div>
+
+  <div class="interview-grid">
+
+    <article class="tip-card">
+      <span class="tip-number">01</span>
+      <h3>Master Core Java</h3>
+      <p>
+        Revise OOPs, String, Exception Handling, Collections,
+        Multithreading, Java 8 features and important differences.
+      </p>
+      <b>Focus:</b> Explain concepts with a small real example.
+    </article>
+
+    <article class="tip-card">
+      <span class="tip-number">02</span>
+      <h3>Know Your Spring Boot</h3>
+      <p>
+        Be ready for dependency injection, annotations, REST APIs,
+        Spring MVC, configuration, JPA/Hibernate and exception handling.
+      </p>
+      <b>Focus:</b> Explain how your application works end-to-end.
+    </article>
+
+    <article class="tip-card">
+      <span class="tip-number">03</span>
+      <h3>Prepare SQL</h3>
+      <p>
+        Practice joins, GROUP BY, subqueries, indexes, normalization,
+        constraints and common interview queries.
+      </p>
+      <b>Focus:</b> Write queries instead of only explaining them.
+    </article>
+
+    <article class="tip-card">
+      <span class="tip-number">04</span>
+      <h3>Explain Your Projects</h3>
+      <p>
+        Prepare a 60–90 second explanation covering the problem,
+        architecture, technologies, your contribution and result.
+      </p>
+      <b>Focus:</b> Clearly explain what YOU implemented.
+    </article>
+
+    <article class="tip-card">
+      <span class="tip-number">05</span>
+      <h3>Practice REST APIs</h3>
+      <p>
+        Understand GET, POST, PUT, PATCH and DELETE, status codes,
+        JSON, validation, authentication and API testing.
+      </p>
+      <b>Focus:</b> Be able to design one API on a whiteboard.
+    </article>
+
+    <article class="tip-card">
+      <span class="tip-number">06</span>
+      <h3>Spring Security & JWT</h3>
+      <p>
+        Understand authentication vs authorization, JWT flow,
+        filters, roles, protected endpoints and token validation.
+      </p>
+      <b>Focus:</b> Explain the complete login-to-request flow.
+    </article>
+
+    <article class="tip-card">
+      <span class="tip-number">07</span>
+      <h3>Be Ready for Coding</h3>
+      <p>
+        Practice arrays, strings, collections, sorting, searching,
+        HashMap problems and basic Java coding questions.
+      </p>
+      <b>Focus:</b> First explain your approach, then code.
+    </article>
+
+    <article class="tip-card">
+      <span class="tip-number">08</span>
+      <h3>Answer With STAR</h3>
+      <p>
+        For behavioral questions, structure your answer with Situation,
+        Task, Action and Result.
+      </p>
+      <b>Focus:</b> Keep answers specific and evidence-based.
+    </article>
+
+    <article class="tip-card">
+      <span class="tip-number">09</span>
+      <h3>Research the Company</h3>
+      <p>
+        Know the company's product, technology area, role requirements
+        and why you want to join.
+      </p>
+      <b>Focus:</b> Prepare 2–3 thoughtful questions for the interviewer.
+    </article>
+
+    <article class="tip-card">
+      <span class="tip-number">10</span>
+      <h3>Close Strong</h3>
+      <p>
+        Summarize your strongest skills, show interest in the role and
+        ask about the next step in the interview process.
+      </p>
+      <b>Focus:</b> Be confident, concise and professional.
+    </article>
+
+  </div>
+
+  <div class="interview-quick-check">
+    <div>
+      <strong>Before the interview</strong>
+      <span>Resume • Projects • Java • SQL • Spring Boot • Company research</span>
+    </div>
+    <div>
+      <strong>During the interview</strong>
+      <span>Listen carefully • Think aloud • Give examples • Don't bluff</span>
+    </div>
+    <div>
+      <strong>After the interview</strong>
+      <span>Note difficult questions • Improve weak topics • Follow up professionally</span>
+    </div>
+  </div>
 
 </section>
 
