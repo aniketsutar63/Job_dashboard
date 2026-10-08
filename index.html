@@ -1,12 +1,24 @@
 <!doctype html>
 <html lang="en">
+
 <head>
+
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+
+<meta
+  name="viewport"
+  content="width=device-width,initial-scale=1"
+>
 
 <title>Aniket Sutar — Job Search Dashboard</title>
 
+
 <style>
+
+/* =========================================================
+   GLOBAL
+   ========================================================= */
+
 :root{
   --bg:#f5f7fb;
   --panel:#fff;
@@ -15,417 +27,735 @@
   --line:#e6eaf0;
   --accent:#315efb;
   --green:#14804a;
-  --shadow:0 8px 28px rgba(23,32,51,.07)
+  --shadow:0 8px 28px rgba(23,32,51,.07);
 }
 
+
 *{
-  box-sizing:border-box
+  box-sizing:border-box;
 }
+
 
 body{
   margin:0;
-  font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial;
+  font-family:
+    Inter,
+    system-ui,
+    -apple-system,
+    Segoe UI,
+    Roboto,
+    Arial;
+
   background:var(--bg);
+
   color:var(--text);
-  line-height:1.5
+
+  line-height:1.5;
 }
+
 
 .container{
   max-width:1240px;
+
   margin:auto;
-  padding:28px 20px 60px
+
+  padding:28px 20px 60px;
 }
+
+
+/* =========================================================
+   HEADER
+   ========================================================= */
 
 header{
   display:flex;
+
   justify-content:space-between;
+
   gap:20px;
+
   align-items:flex-end;
-  margin-bottom:24px
+
+  margin-bottom:24px;
 }
+
 
 h1{
   font-size:34px;
+
   line-height:1.1;
-  margin:0 0 8px
+
+  margin:0 0 8px;
 }
+
 
 h2{
   font-size:23px;
-  margin:36px 0 14px
+
+  margin:36px 0 14px;
 }
+
 
 h3{
   margin:8px 0 3px;
+
   font-size:18px;
-  line-height:1.25
+
+  line-height:1.25;
 }
+
 
 p{
   color:var(--muted);
-  margin:7px 0
+
+  margin:7px 0;
 }
+
 
 .kicker{
   font-weight:800;
+
   color:var(--accent);
+
   letter-spacing:.08em;
+
   text-transform:uppercase;
-  font-size:12px
+
+  font-size:12px;
 }
+
 
 .updated{
   font-size:12px;
+
   color:var(--muted);
-  text-align:right
+
+  text-align:right;
 }
+
+
+/* =========================================================
+   HERO
+   ========================================================= */
 
 .hero{
   display:grid;
+
   grid-template-columns:1.4fr .8fr;
-  gap:18px
+
+  gap:18px;
 }
+
 
 .panel{
   background:var(--panel);
+
   border:1px solid var(--line);
+
   border-radius:18px;
+
   padding:22px;
-  box-shadow:var(--shadow)
+
+  box-shadow:var(--shadow);
 }
+
+
+/* =========================================================
+   STATS
+   ========================================================= */
 
 .stats{
   display:grid;
+
   grid-template-columns:repeat(2,1fr);
-  gap:12px
+
+  gap:12px;
 }
+
 
 .stat{
   background:#fff;
+
   border:1px solid var(--line);
+
   border-radius:14px;
-  padding:16px
+
+  padding:16px;
 }
+
 
 .stat b{
   display:block;
-  font-size:28px
+
+  font-size:28px;
 }
+
 
 .stat span{
   color:var(--muted);
-  font-size:12px
+
+  font-size:12px;
 }
+
+
+/* =========================================================
+   TARGET ROLES
+   ========================================================= */
 
 .roles{
   display:grid;
+
   grid-template-columns:repeat(5,1fr);
-  gap:12px
+
+  gap:12px;
 }
+
 
 .role{
   background:#fff;
+
   border:1px solid var(--line);
+
   border-radius:14px;
-  padding:16px
+
+  padding:16px;
 }
+
+
+/* =========================================================
+   CONTROLS
+   ========================================================= */
 
 .controls{
   display:flex;
+
   gap:10px;
+
   flex-wrap:wrap;
-  margin:14px 0
+
+  margin:14px 0;
 }
+
 
 input{
   border:1px solid var(--line);
+
   background:#fff;
+
   border-radius:10px;
+
   padding:11px 13px;
+
   font:inherit;
+
   flex:1;
-  min-width:260px
+
+  min-width:260px;
 }
+
 
 button,
 .filter{
   border:1px solid var(--line);
+
   background:#fff;
+
   border-radius:10px;
+
   padding:10px 13px;
+
   cursor:pointer;
-  font-weight:650
+
+  font-weight:650;
 }
+
 
 .filter.active{
   background:var(--text);
-  color:#fff
+
+  color:#fff;
 }
+
+
+/* =========================================================
+   JOB GRID
+   ========================================================= */
 
 .grid{
   display:grid;
+
   grid-template-columns:repeat(3,1fr);
-  gap:14px
+
+  gap:14px;
 }
+
 
 .job-card{
   background:#fff;
+
   border:1px solid var(--line);
+
   border-radius:16px;
+
   padding:17px;
+
   display:flex;
+
   flex-direction:column;
-  min-height:350px
+
+  min-height:350px;
 }
+
 
 .card-top{
   display:flex;
+
   justify-content:space-between;
-  align-items:center
+
+  align-items:center;
 }
+
 
 .badge{
   font-size:11px;
+
   font-weight:800;
+
   border-radius:999px;
+
   padding:5px 8px;
+
   background:#eef2ff;
-  color:#2946a7
+
+  color:#2946a7;
 }
+
+
+.apply-first{
+  background:#e9f8ef;
+
+  color:#14804a;
+}
+
 
 .good-match{
   background:#fff4df;
-  color:#8a4b00
+
+  color:#8a4b00;
 }
+
 
 .stretch-role{
   background:#fdeaea;
-  color:#9b3333
+
+  color:#9b3333;
 }
+
 
 .score{
   font-size:22px;
+
   font-weight:850;
-  color:var(--green)
+
+  color:var(--green);
 }
+
 
 .score small{
   font-size:11px;
-  color:var(--muted)
+
+  color:var(--muted);
 }
+
 
 .company{
   font-weight:700;
-  color:#4b5565
+
+  color:#4b5565;
 }
+
 
 .meta{
   color:var(--muted);
+
   font-size:12px;
-  margin:10px 0
+
+  margin:10px 0;
 }
+
 
 .mini{
   font-size:12px;
+
   background:#f7f9fc;
+
   border-radius:10px;
+
   padding:9px;
+
   margin-top:8px;
-  color:#4b5565
+
+  color:#4b5565;
 }
 
+
 .gap{
-  background:#fff8ed
+  background:#fff8ed;
 }
+
 
 .apply{
   margin-top:auto;
+
   text-align:center;
+
   background:var(--accent);
+
   color:#fff;
+
   text-decoration:none;
+
   padding:10px;
+
   border-radius:10px;
+
   font-weight:750;
-  margin-top:12px
+
+  margin-top:12px;
 }
+
+
+.apply:hover{
+  opacity:.9;
+}
+
+
+/* =========================================================
+   PRIORITY
+   ========================================================= */
 
 .priority{
   display:grid;
+
   grid-template-columns:1fr auto auto;
+
   gap:14px;
+
   align-items:center;
+
   background:#fff;
+
   border:1px solid var(--line);
+
   padding:13px 15px;
+
   border-radius:12px;
-  margin:8px 0
+
+  margin:8px 0;
 }
 
+
 .priority b{
-  color:var(--accent)
+  color:var(--accent);
 }
+
 
 .priority span{
   color:var(--muted);
-  font-size:12px
+
+  font-size:12px;
 }
+
 
 .priority a{
   color:var(--accent);
+
   font-weight:750;
-  text-decoration:none
+
+  text-decoration:none;
 }
+
+
+/* =========================================================
+   MESSAGES
+   ========================================================= */
 
 li{
   margin:8px 0;
-  color:#4b5565
+
+  color:#4b5565;
 }
+
 
 .message{
   background:#fff;
+
   border:1px solid var(--line);
+
   border-radius:14px;
+
   padding:16px;
-  margin:10px 0
+
+  margin:10px 0;
 }
+
 
 .message-head{
   display:flex;
+
   justify-content:space-between;
-  gap:10px
+
+  gap:10px;
 }
+
 
 .message-head span{
   color:var(--muted);
-  font-size:12px
+
+  font-size:12px;
 }
+
+
+.message button{
+  margin-top:8px;
+}
+
+
+/* =========================================================
+   NOTE
+   ========================================================= */
 
 .note{
   border-left:4px solid var(--accent);
+
   padding:10px 14px;
+
   background:#f0f4ff;
+
   border-radius:8px;
-  color:#475467
+
+  color:#475467;
 }
+
+
+/* =========================================================
+   FOOTER
+   ========================================================= */
 
 footer{
   margin-top:38px;
+
   color:var(--muted);
-  font-size:12px
+
+  font-size:12px;
 }
 
+
+/* =========================================================
+   RESPONSIVE
+   ========================================================= */
+
 @media(max-width:950px){
+
   .hero{
-    grid-template-columns:1fr
+    grid-template-columns:1fr;
   }
 
   .grid{
-    grid-template-columns:repeat(2,1fr)
+    grid-template-columns:repeat(2,1fr);
   }
 
   .roles{
-    grid-template-columns:repeat(2,1fr)
+    grid-template-columns:repeat(2,1fr);
   }
+
 }
 
+
 @media(max-width:650px){
+
   header{
-    display:block
+    display:block;
   }
 
   .grid,
   .roles{
-    grid-template-columns:1fr
+    grid-template-columns:1fr;
   }
 
   .stats{
-    grid-template-columns:repeat(2,1fr)
+    grid-template-columns:repeat(2,1fr);
   }
 
   h1{
-    font-size:28px
+    font-size:28px;
   }
 
   .priority{
-    grid-template-columns:1fr
+    grid-template-columns:1fr;
   }
+
 }
+
 </style>
+
 </head>
+
 
 <body>
 
+
 <main class="container">
+
+
+<!-- =====================================================
+     HEADER
+     ===================================================== -->
 
 <header>
 
 <div>
-<div class="kicker">Career Intelligence Dashboard</div>
 
-<h1>Aniket Sutar — Java Job Search</h1>
+<div class="kicker">
+Career Intelligence Dashboard
+</div>
+
+
+<h1>
+Aniket Sutar — Java Job Search
+</h1>
+
 
 <p>
-Java Developer · Spring Boot · Backend · REST APIs · MySQL · Hibernate/JPA · React.js
+Java Developer · Spring Boot · Backend · REST APIs ·
+MySQL · Hibernate/JPA · React.js
 </p>
 
 </div>
 
+
 <div class="updated">
+
 Research checked<br>
-<b id="researchDate">Loading...</b>
+
+<b id="researchDate">
+Loading...
+</b>
+
 </div>
 
 </header>
 
 
+
+<!-- =====================================================
+     HERO
+     ===================================================== -->
+
 <section class="hero">
 
+
 <div class="panel">
 
-<div class="kicker">Profile summary</div>
+<div class="kicker">
+Profile summary
+</div>
+
 
 <p>
-<b>1.5+ years</b> of professional software development experience with Java,
-Spring Boot, REST APIs, MySQL, Hibernate/JPA, Spring Security/JWT and React.js.
+
+<b>1.5+ years</b> of professional software development
+experience with Java, Spring Boot, REST APIs, MySQL,
+Hibernate/JPA, Spring Security/JWT and React.js.
+
 BE in Electronics & Telecommunication Engineering (2024).
+
 Pune-based; open to onsite, hybrid and remote roles.
+
 </p>
 
+
 <div class="note">
-Strongest lane: Java backend / Spring Boot roles in the 1–3 year band.
-Recurring gaps: microservices, cloud, Docker/Kubernetes, automated testing
-and deeper frontend framework experience.
+
+<strong>Strongest lane:</strong>
+Java backend / Spring Boot roles in the 1–3 year band.
+
+<br><br>
+
+<strong>Recurring gaps:</strong>
+microservices, cloud, Docker/Kubernetes,
+automated testing and deeper frontend framework experience.
+
 </div>
 
 </div>
+
 
 
 <div class="panel">
 
-<div class="kicker">Dashboard</div>
+<div class="kicker">
+Dashboard
+</div>
+
 
 <div class="stats">
 
-<div class="stat">
-<b>25</b>
-<span>verified listings</span>
-</div>
 
 <div class="stat">
-<b>8</b>
-<span>Apply First</span>
+
+<b id="totalJobs">
+0
+</b>
+
+<span>
+verified listings
+</span>
+
 </div>
 
-<div class="stat">
-<b>14</b>
-<span>Good Match</span>
-</div>
+
 
 <div class="stat">
-<b>3</b>
-<span>Stretch Role</span>
+
+<b id="applyFirstCount">
+0
+</b>
+
+<span>
+Apply First
+</span>
+
 </div>
+
+
+
+<div class="stat">
+
+<b id="goodMatchCount">
+0
+</b>
+
+<span>
+Good Match
+</span>
+
+</div>
+
+
+
+<div class="stat">
+
+<b id="stretchCount">
+0
+</b>
+
+<span>
+Stretch Role
+</span>
+
+</div>
+
 
 </div>
 
@@ -434,261 +764,556 @@ and deeper frontend framework experience.
 </section>
 
 
-<h2>Top 5 roles to target</h2>
+
+<!-- =====================================================
+     TARGET ROLES
+     ===================================================== -->
+
+<h2>
+Top 5 roles to target
+</h2>
+
 
 <section class="roles">
 
-<div class="role">
-<b>Target role</b>
-<h3>Java Backend Developer</h3>
-<p>
-Strongest alignment with Java, Spring Boot, REST, MySQL and JPA/Hibernate.
-</p>
-</div>
 
 <div class="role">
-<b>Target role</b>
-<h3>Java Developer / Software Engineer</h3>
+
+<b>
+Target role
+</b>
+
+<h3>
+Java Backend Developer
+</h3>
+
 <p>
-Broadest fit across Core Java, OOP, SQL, Git and backend delivery.
+Strongest alignment with Java, Spring Boot, REST,
+MySQL and JPA/Hibernate.
 </p>
+
 </div>
 
-<div class="role">
-<b>Target role</b>
-<h3>Spring Boot Developer</h3>
-<p>
-Best framework fit; build microservices/cloud/testing evidence next.
-</p>
-</div>
+
 
 <div class="role">
-<b>Target role</b>
-<h3>Full Stack Java Developer</h3>
+
+<b>
+Target role
+</b>
+
+<h3>
+Java Developer / Software Engineer
+</h3>
+
 <p>
-Good because you have React + Java/Spring Boot; Angular/TypeScript recur in JDs.
+Broadest fit across Core Java, OOP, SQL,
+Git and backend delivery.
 </p>
+
 </div>
 
+
+
 <div class="role">
-<b>Target role</b>
-<h3>Junior / Associate Java Developer</h3>
+
+<b>
+Target role
+</b>
+
+<h3>
+Spring Boot Developer
+</h3>
+
 <p>
-Target 1–2 year bands where fundamentals and Spring are emphasized.
+Best framework fit; build microservices,
+cloud and testing evidence next.
 </p>
+
 </div>
+
+
+
+<div class="role">
+
+<b>
+Target role
+</b>
+
+<h3>
+Full Stack Java Developer
+</h3>
+
+<p>
+Good because you have React + Java/Spring Boot.
+</p>
+
+</div>
+
+
+
+<div class="role">
+
+<b>
+Target role
+</b>
+
+<h3>
+Junior / Associate Java Developer
+</h3>
+
+<p>
+Target 1–2 year bands where fundamentals
+and Spring are emphasized.
+</p>
+
+</div>
+
 
 </section>
 
 
-<h2>Top 10 priority applications</h2>
+
+<!-- =====================================================
+     TOP 10 PRIORITY
+     ===================================================== -->
+
+<h2>
+Top 10 priority applications
+</h2>
+
 
 <section class="panel">
 
-<div class="priority">
-<div><b>#1</b> JAVA Developer (1 to 3 yrs Exp)</div>
-<span>Sparken IT Solutions · 93/100</span>
-<a href="https://in.indeed.com/viewjob?jk=027223f352ecd6e1" target="_blank">Apply ↗</a>
-</div>
+<p>
+The priority list below is retained as your original
+research/reference list. New live jobs appear in the
+"All Live Jobs" section below.
+</p>
+
 
 <div class="priority">
-<div><b>#2</b> Full Stack Developer (WFO)</div>
-<span>Mithi Software Technologies · 91/100</span>
-<a href="https://in.indeed.com/q-mithi-software-technologies-pvt.-ltd.-jobs.html" target="_blank">Apply ↗</a>
+
+<div>
+<b>#1</b>
+JAVA Developer (1 to 3 yrs Exp)
 </div>
 
-<div class="priority">
-<div><b>#3</b> SDE 1 Backend</div>
-<span>eshopbox · 90/100</span>
-<a href="https://in.indeed.com/viewjob?jk=0216b203dd7a587c" target="_blank">Apply ↗</a>
+<span>
+Sparken IT Solutions · 93/100
+</span>
+
+<a
+href="https://in.indeed.com/viewjob?jk=027223f352ecd6e1"
+target="_blank"
+rel="noopener"
+>
+Apply ↗
+</a>
+
 </div>
 
-<div class="priority">
-<div><b>#4</b> Java Developer</div>
-<span>MindWorx · 89/100</span>
-<a href="https://in.indeed.com/viewjob?jk=b40748a4b1b253c2" target="_blank">Apply ↗</a>
-</div>
+
 
 <div class="priority">
-<div><b>#5</b> Software Engineer (Java)</div>
-<span>Diksha Technologies · 88/100</span>
-<a href="https://in.indeed.com/viewjob?jk=a3193edd9369ba18" target="_blank">Apply ↗</a>
+
+<div>
+<b>#2</b>
+Full Stack Developer (WFO)
 </div>
 
-<div class="priority">
-<div><b>#6</b> Java Developer</div>
-<span>ALLPS · 88/100</span>
-<a href="https://wellfound.com/jobs/3739528-java-developer" target="_blank">Apply ↗</a>
+<span>
+Mithi Software Technologies · 91/100
+</span>
+
+<a
+href="https://in.indeed.com/q-mithi-software-technologies-pvt.-ltd.-jobs.html"
+target="_blank"
+rel="noopener"
+>
+Apply ↗
+</a>
+
 </div>
 
-<div class="priority">
-<div><b>#7</b> Backend Engineer</div>
-<span>WeKnow Group · 87/100</span>
-<a href="https://wellfound.com/jobs/3721618-backend-engineer" target="_blank">Apply ↗</a>
-</div>
+
 
 <div class="priority">
-<div><b>#8</b> Software Developer (Java)</div>
-<span>Decipher Zone · 86/100</span>
-<a href="https://wellfound.com/jobs/4689507-software-developer" target="_blank">Apply ↗</a>
+
+<div>
+<b>#3</b>
+SDE 1 Backend
 </div>
 
-<div class="priority">
-<div><b>#9</b> Custom Software Engineer – Java Standard Edition</div>
-<span>Accenture · 84/100</span>
-<a href="https://in.indeed.com/viewjob?jk=07640015497ba8ae" target="_blank">Apply ↗</a>
+<span>
+eshopbox · 90/100
+</span>
+
+<a
+href="https://in.indeed.com/viewjob?jk=0216b203dd7a587c"
+target="_blank"
+rel="noopener"
+>
+Apply ↗
+</a>
+
 </div>
 
+
+
 <div class="priority">
-<div><b>#10</b> Backend Developer</div>
-<span>Tracxn · 84/100</span>
-<a href="https://wellfound.com/jobs/4632678-backend-developer" target="_blank">Apply ↗</a>
+
+<div>
+<b>#4</b>
+Java Developer
 </div>
+
+<span>
+MindWorx · 89/100
+</span>
+
+<a
+href="https://in.indeed.com/viewjob?jk=b40748a4b1b253c2"
+target="_blank"
+rel="noopener"
+>
+Apply ↗
+</a>
+
+</div>
+
+
+
+<div class="priority">
+
+<div>
+<b>#5</b>
+Software Engineer (Java)
+</div>
+
+<span>
+Diksha Technologies · 88/100
+</span>
+
+<a
+href="https://in.indeed.com/viewjob?jk=a3193edd9369ba18"
+target="_blank"
+rel="noopener"
+>
+Apply ↗
+</a>
+
+</div>
+
+
+
+<div class="priority">
+
+<div>
+<b>#6</b>
+Java Developer
+</div>
+
+<span>
+ALLPS · 88/100
+</span>
+
+<a
+href="https://wellfound.com/jobs/3739528-java-developer"
+target="_blank"
+rel="noopener"
+>
+Apply ↗
+</a>
+
+</div>
+
+
+
+<div class="priority">
+
+<div>
+<b>#7</b>
+Backend Engineer
+</div>
+
+<span>
+WeKnow Group · 87/100
+</span>
+
+<a
+href="https://wellfound.com/jobs/3721618-backend-engineer"
+target="_blank"
+rel="noopener"
+>
+Apply ↗
+</a>
+
+</div>
+
+
+
+<div class="priority">
+
+<div>
+<b>#8</b>
+Software Developer (Java)
+</div>
+
+<span>
+Decipher Zone · 86/100
+</span>
+
+<a
+href="https://wellfound.com/jobs/4689507-software-developer"
+target="_blank"
+rel="noopener"
+>
+Apply ↗
+</a>
+
+</div>
+
+
+
+<div class="priority">
+
+<div>
+<b>#9</b>
+Custom Software Engineer – Java Standard Edition
+</div>
+
+<span>
+Accenture · 84/100
+</span>
+
+<a
+href="https://in.indeed.com/viewjob?jk=07640015497ba8ae"
+target="_blank"
+rel="noopener"
+>
+Apply ↗
+</a>
+
+</div>
+
+
+
+<div class="priority">
+
+<div>
+<b>#10</b>
+Backend Developer
+</div>
+
+<span>
+Tracxn · 84/100
+</span>
+
+<a
+href="https://wellfound.com/jobs/4632678-backend-developer"
+target="_blank"
+rel="noopener"
+>
+Apply ↗
+</a>
+
+</div>
+
 
 </section>
 
 
-<h2>All verified openings</h2>
+
+<!-- =====================================================
+     LIVE JOBS
+     ===================================================== -->
+
+<h2>
+All Live Jobs
+</h2>
+
 
 <div class="controls">
 
+
 <input
 id="search"
-placeholder="Search title, company, location, experience…"
+placeholder="Search title, company, location, experience..."
+autocomplete="off"
 >
 
-<button class="filter active" data-filter="All">
-All (25)
+
+<button
+class="filter active"
+data-filter="All"
+>
+All (0)
 </button>
 
-<button class="filter" data-filter="Apply First">
-Apply First (8)
+
+<button
+class="filter"
+data-filter="Apply First"
+>
+Apply First (0)
 </button>
 
-<button class="filter" data-filter="Good Match">
-Good Match (14)
+
+<button
+class="filter"
+data-filter="Good Match"
+>
+Good Match (0)
 </button>
 
-<button class="filter" data-filter="Stretch Role">
-Stretch Role (3)
+
+<button
+class="filter"
+data-filter="Stretch Role"
+>
+Stretch Role (0)
 </button>
 
+
 </div>
 
 
-<section class="grid" id="jobs">
 
-<!-- Existing job cards remain unchanged -->
+<section
+class="grid"
+id="jobs"
+>
 
-<article class="job-card"
-data-category="Apply First"
-data-search="java developer sparken it solutions pune 1–3 years">
-
-<div class="card-top">
-<span class="badge apply-first">Apply First</span>
-<span class="score">93<small>/100</small></span>
+<div
+id="loadingJobs"
+class="note"
+>
+Loading latest Java jobs...
 </div>
-
-<h3>JAVA Developer (1 to 3 yrs Exp)</h3>
-
-<div class="company">Sparken IT Solutions</div>
-
-<div class="meta">
-📍 Pune · 🧭 1–3 years
-</div>
-
-<p>Java/Spring/Hibernate, REST/SOAP, Maven, SQL</p>
-
-<div class="mini">
-<b>Why you match</b><br>
-Core Java, Spring/Hibernate, REST, Maven, MySQL.
-</div>
-
-<div class="mini gap">
-<b>Missing / weaker evidence</b><br>
-AngularJS/JQuery/Tomcat and broader J2EE are not clearly evidenced.
-</div>
-
-<a class="apply"
-href="https://in.indeed.com/viewjob?jk=027223f352ecd6e1"
-target="_blank"
-rel="noopener">
-Direct Apply ↗
-</a>
-
-</article>
-
-<!--
-Your remaining existing job cards should stay here exactly as they are.
--->
 
 </section>
 
 
-<h2>Resume improvements for the top 10</h2>
+
+<!-- =====================================================
+     RESUME IMPROVEMENTS
+     ===================================================== -->
+
+<h2>
+Resume improvements for the top 10
+</h2>
+
 
 <section class="panel">
 
 <ol>
 
 <li>
+
 <b>Sparken / MindWorx / eShopbox:</b>
-Add Spring MVC, Spring Framework, Hibernate, RESTful Web Services,
-Maven, J2EE, MySQL and Tomcat where accurate.
+
+Add Spring MVC, Spring Framework, Hibernate,
+RESTful Web Services, Maven, J2EE, MySQL
+and Tomcat where accurate.
+
 </li>
 
+
 <li>
+
 <b>Mithi:</b>
-Add AWS, Docker and Angular only if you can substantiate hands-on exposure;
-otherwise emphasize React and database integration.
+
+Add AWS, Docker and Angular only if you can
+substantiate hands-on exposure; otherwise
+emphasize React and database integration.
+
 </li>
 
+
 <li>
+
 <b>Diksha:</b>
-Strengthen one backend bullet with API ownership, secure coding,
-CI/CD and a measurable outcome if accurate.
+
+Strengthen one backend bullet with API ownership,
+secure coding, CI/CD and a measurable outcome
+if accurate.
+
 </li>
 
+
 <li>
+
 <b>WeKnow / ALLPS:</b>
-Lead with Java + Spring Boot + REST + MySQL + Git + debugging
-and third-party API integration if genuinely done.
+
+Lead with Java + Spring Boot + REST + MySQL
++ Git + debugging and third-party API integration
+if genuinely done.
+
 </li>
 
+
 <li>
+
 <b>Decipher Zone:</b>
-Use “Java Backend Developer” prominently and emphasize Spring Boot,
-REST, JPA/Hibernate, SQL and testing.
+
+Use "Java Backend Developer" prominently and
+emphasize Spring Boot, REST, JPA/Hibernate,
+SQL and testing.
+
 </li>
 
+
 <li>
+
 <b>Quick Heal:</b>
-Add Angular, unit testing, Kafka, MongoDB and AWS only where supported;
-surface Spring Security/JWT.
+
+Add Angular, unit testing, Kafka, MongoDB and AWS
+only where supported; surface Spring Security/JWT.
+
 </li>
 
+
 <li>
+
 <b>SAP Fioneer:</b>
-Add a Backend &amp; Cloud line for Microservices, CI/CD, Docker
-and AWS/Azure as you gain evidence.
+
+Add a Backend & Cloud line for Microservices,
+CI/CD, Docker and AWS/Azure as you gain evidence.
+
 </li>
 
+
 <li>
+
 <b>Deloitte:</b>
-Add Angular/TypeScript, JUnit/Mockito, Swagger/OpenAPI,
-Docker/Kubernetes and Kafka if substantiated.
+
+Add Angular/TypeScript, JUnit/Mockito,
+Swagger/OpenAPI, Docker/Kubernetes and Kafka
+if substantiated.
+
 </li>
 
+
 <li>
+
 <b>Accenture / Barclays / Mastercard:</b>
-Add Java 17/21, microservices, CI/CD, JUnit/Mockito, Maven,
-Docker/Kubernetes and cloud after gaining evidence.
+
+Add Java 17/21, microservices, CI/CD,
+JUnit/Mockito, Maven, Docker/Kubernetes
+and cloud after gaining evidence.
+
 </li>
 
+
 <li>
+
 <b>Quorum:</b>
-Add PL/SQL, Jenkins and AWS/Kubernetes only if supportable;
-emphasize Collections, multithreading, exceptions and SQL now.
+
+Add PL/SQL, Jenkins and AWS/Kubernetes only
+if supportable; emphasize Collections,
+multithreading, exceptions and SQL now.
+
 </li>
 
 </ol>
@@ -696,222 +1321,1110 @@ emphasize Collections, multithreading, exceptions and SQL now.
 </section>
 
 
-<h2>Recruiter / hiring-manager messages — top 5</h2>
+
+<!-- =====================================================
+     RECRUITER MESSAGES
+     ===================================================== -->
+
+<h2>
+Recruiter / hiring-manager messages — top 5
+</h2>
+
 
 <section>
 
+
 <div class="message">
 
 <div class="message-head">
-<b>Sparken IT Solutions</b>
-<span>JAVA Developer</span>
+
+<b>
+Sparken IT Solutions
+</b>
+
+<span>
+JAVA Developer
+</span>
+
 </div>
+
 
 <p id="m0">
-Hi, I’m Aniket Sutar, a Java Developer with 1.5+ years of experience
-in Java, Spring Boot, REST APIs, MySQL and Hibernate/JPA.
-I’m based in Pune and noticed your JAVA Developer opening.
-The Java/Spring/Hibernate and REST requirements closely match my experience.
-I’d be glad to share my resume and discuss the opportunity.
+
+Hi, I'm Aniket Sutar, a Java Developer with
+1.5+ years of experience in Java, Spring Boot,
+REST APIs, MySQL and Hibernate/JPA.
+
+I'm based in Pune and noticed your JAVA Developer
+opening. The Java/Spring/Hibernate and REST
+requirements closely match my experience.
+
+I'd be glad to share my resume and discuss
+the opportunity.
+
 </p>
 
-<button onclick="navigator.clipboard.writeText(document.getElementById('m0').innerText)">
+
+<button
+onclick="copyMessage('m0')"
+>
 Copy message
 </button>
 
 </div>
 
 
+
 <div class="message">
 
 <div class="message-head">
-<b>Mithi Software Technologies</b>
-<span>Full Stack Developer</span>
+
+<b>
+Mithi Software Technologies
+</b>
+
+<span>
+Full Stack Developer
+</span>
+
 </div>
+
 
 <p id="m1">
-Hi, I’m Aniket Sutar, a Pune-based Java Developer with 1.5+ years
-of backend and full-stack experience using Java, Spring Boot,
-REST APIs, MySQL and React.js. I came across the Full Stack Developer
-opening and the Java/Hibernate/SQL and frontend requirements align well
-with my background. I’d appreciate the opportunity to connect.
+
+Hi, I'm Aniket Sutar, a Pune-based Java Developer
+with 1.5+ years of backend and full-stack experience
+using Java, Spring Boot, REST APIs, MySQL and React.js.
+
+I came across the Full Stack Developer opening and
+the Java/Hibernate/SQL and frontend requirements
+align well with my background.
+
+I'd appreciate the opportunity to connect.
+
 </p>
 
-<button onclick="navigator.clipboard.writeText(document.getElementById('m1').innerText)">
+
+<button
+onclick="copyMessage('m1')"
+>
 Copy message
 </button>
 
 </div>
 
 
+
 <div class="message">
 
 <div class="message-head">
-<b>eshopbox</b>
-<span>SDE 1 Backend</span>
+
+<b>
+eshopbox
+</b>
+
+<span>
+SDE 1 Backend
+</span>
+
 </div>
+
 
 <p id="m2">
-Hi, I’m Aniket Sutar, a Java Developer with 1.5+ years of backend
-experience in Spring Boot, REST APIs, MySQL, JPA/Hibernate and Git.
-I noticed the SDE 1 Backend opening at eShopbox and found a strong
-overlap with my experience in backend APIs and frontend-backend integration.
-I’d be happy to share my resume.
+
+Hi, I'm Aniket Sutar, a Java Developer with 1.5+
+years of backend experience in Spring Boot,
+REST APIs, MySQL, JPA/Hibernate and Git.
+
+I noticed the SDE 1 Backend opening at eShopbox
+and found a strong overlap with my experience
+in backend APIs and frontend-backend integration.
+
+I'd be happy to share my resume.
+
 </p>
 
-<button onclick="navigator.clipboard.writeText(document.getElementById('m2').innerText)">
+
+<button
+onclick="copyMessage('m2')"
+>
 Copy message
 </button>
 
 </div>
 
 
+
 <div class="message">
 
 <div class="message-head">
-<b>Diksha Technologies</b>
-<span>Software Engineer (Java)</span>
+
+<b>
+Diksha Technologies
+</b>
+
+<span>
+Software Engineer (Java)
+</span>
+
 </div>
+
 
 <p id="m3">
-Hi, I’m Aniket Sutar, a Pune-based Java Developer with 1.5+ years
-of experience building Java/Spring Boot applications, REST APIs
-and database-backed services. Your Software Engineer (Java) role
-caught my attention because of its API-driven development and secure
-software focus. I’d appreciate the chance to discuss how my background
-could fit the team.
+
+Hi, I'm Aniket Sutar, a Pune-based Java Developer
+with 1.5+ years of experience building
+Java/Spring Boot applications, REST APIs
+and database-backed services.
+
+Your Software Engineer (Java) role caught my
+attention because of its API-driven development
+and secure software focus.
+
+I'd appreciate the chance to discuss how my
+background could fit the team.
+
 </p>
 
-<button onclick="navigator.clipboard.writeText(document.getElementById('m3').innerText)">
+
+<button
+onclick="copyMessage('m3')"
+>
 Copy message
 </button>
 
 </div>
+
 
 
 <div class="message">
 
 <div class="message-head">
-<b>WeKnow Group</b>
-<span>Backend Engineer</span>
+
+<b>
+WeKnow Group
+</b>
+
+<span>
+Backend Engineer
+</span>
+
 </div>
 
+
 <p id="m4">
-Hi, I’m Aniket Sutar, a Java Developer with 1.5+ years of experience
-in Java, Spring Boot, REST APIs, MySQL and Git. I’m interested in your
-Backend Engineer opportunity because the 1–2 year experience range and
-Java/Spring Boot backend focus align closely with my profile.
-I’d be glad to connect and share my resume.
+
+Hi, I'm Aniket Sutar, a Java Developer with
+1.5+ years of experience in Java, Spring Boot,
+REST APIs, MySQL and Git.
+
+I'm interested in your Backend Engineer
+opportunity because the 1–2 year experience
+range and Java/Spring Boot backend focus
+align closely with my profile.
+
+I'd be glad to connect and share my resume.
+
 </p>
 
-<button onclick="navigator.clipboard.writeText(document.getElementById('m4').innerText)">
+
+<button
+onclick="copyMessage('m4')"
+>
 Copy message
 </button>
 
 </div>
+
 
 </section>
 
 
+
+<!-- =====================================================
+     FOOTER
+     ===================================================== -->
+
 <footer>
 
-<b>Verification note:</b>
-Each included listing was checked against a live job-detail/search page
-during this research pass. Availability can change after this check;
-Direct Apply opens the source/application page used for verification.
-Fit scores are resume-to-JD matching estimates, not employer scores.
+<b>
+Automatic Job Sync:
+</b>
+
+Jobs are loaded from the live Supabase database.
+
+New matching jobs are added by the daily
+CleanJobData synchronization.
+
+<br><br>
+
+<b>
+Dashboard:
+</b>
+
+Fit scores are resume-to-JD matching estimates,
+not employer scores.
 
 </footer>
+
 
 </main>
 
 
+
+<!-- =====================================================
+     JAVASCRIPT
+     ===================================================== -->
+
 <script>
 
+
 /* =========================================================
-   AUTOMATIC RESEARCH DATE
+   GLOBAL DATA
+   ========================================================= */
+
+let allJobs = [];
+
+let activeFilter = "All";
+
+
+/* =========================================================
+   DATE
    ========================================================= */
 
 function updateResearchDate(){
 
-  const today = new Date();
+  const today =
+    new Date();
 
-  const formattedDate = today.toLocaleDateString("en-GB", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric"
-  });
 
-  document.getElementById("researchDate").textContent = formattedDate;
+  const formattedDate =
+    today.toLocaleDateString(
+      "en-GB",
+      {
+        day:"2-digit",
+        month:"short",
+        year:"numeric"
+      }
+    );
 
+
+  document
+    .getElementById(
+      "researchDate"
+    )
+    .textContent =
+      formattedDate;
 }
-
-
-/* Run date update */
-updateResearchDate();
 
 
 /* =========================================================
-   JOB SEARCH / FILTER
+   LOAD LIVE JOBS
    ========================================================= */
 
-const cards = [
-  ...document.querySelectorAll('.job-card')
-];
+async function loadJobs(){
 
-const filters = [
-  ...document.querySelectorAll('.filter')
-];
-
-let active = 'All';
+  const jobsContainer =
+    document.getElementById(
+      "jobs"
+    );
 
 
-function applyFilter(){
+  jobsContainer.innerHTML = `
+    <div class="note">
+      Loading latest Java jobs...
+    </div>
+  `;
 
-  const q =
-    document
-      .getElementById('search')
-      .value
-      .toLowerCase()
-      .trim();
 
-  cards.forEach(card => {
+  try{
 
-    const ok =
-      (active === 'All' || card.dataset.category === active) &&
-      (!q || card.dataset.search.includes(q));
+    const response =
+      await fetch(
+        "/api/jobs",
+        {
+          method:"GET",
 
-    card.style.display = ok ? 'flex' : 'none';
+          cache:"no-store",
 
-  });
+          headers:{
+            "Accept":
+              "application/json"
+          }
+        }
+      );
+
+
+    if(!response.ok){
+
+      throw new Error(
+        `Job API returned ${response.status}`
+      );
+
+    }
+
+
+    const result =
+      await response.json();
+
+
+    if(!result.success){
+
+      throw new Error(
+        result.error ||
+        "Job API failed"
+      );
+
+    }
+
+
+    allJobs =
+      Array.isArray(
+        result.jobs
+      )
+        ? result.jobs
+        : [];
+
+
+    updateDashboardStats();
+
+    renderJobs();
+
+
+  }catch(error){
+
+    console.error(
+      "Job loading error:",
+      error
+    );
+
+
+    jobsContainer.innerHTML = `
+
+      <div class="note">
+
+        Unable to load live jobs.
+
+        <br><br>
+
+        Error:
+        ${escapeHTML(
+          error.message
+        )}
+
+      </div>
+
+    `;
+
+  }
 
 }
 
 
-filters.forEach(button => {
+/* =========================================================
+   CATEGORY
+   ========================================================= */
 
-  button.onclick = () => {
+function getCategory(job){
 
-    filters.forEach(x =>
-      x.classList.remove('active')
+  const score =
+    Number(
+      job.fit_score || 0
     );
 
-    button.classList.add('active');
 
-    active = button.dataset.filter;
+  if(score >= 85){
 
-    applyFilter();
+    return "Apply First";
 
-  };
+  }
 
-});
 
+  if(score >= 70){
+
+    return "Good Match";
+
+  }
+
+
+  return "Stretch Role";
+
+}
+
+
+/* =========================================================
+   CATEGORY CLASS
+   ========================================================= */
+
+function getCategoryClass(
+  category
+){
+
+  if(
+    category ===
+    "Apply First"
+  ){
+
+    return "apply-first";
+
+  }
+
+
+  if(
+    category ===
+    "Good Match"
+  ){
+
+    return "good-match";
+
+  }
+
+
+  return "stretch-role";
+
+}
+
+
+/* =========================================================
+   RENDER JOBS
+   ========================================================= */
+
+function renderJobs(){
+
+  const jobsContainer =
+    document.getElementById(
+      "jobs"
+    );
+
+
+  const searchInput =
+    document.getElementById(
+      "search"
+    );
+
+
+  const searchText =
+    searchInput
+      ? searchInput.value
+          .toLowerCase()
+          .trim()
+      : "";
+
+
+  const filteredJobs =
+    allJobs.filter(
+      job => {
+
+        const category =
+          getCategory(job);
+
+
+        const searchableText = `
+
+          ${job.title || ""}
+
+          ${job.company || ""}
+
+          ${job.location || ""}
+
+          ${job.experience || ""}
+
+          ${job.category || ""}
+
+          ${job["why-match"] || ""}
+
+          ${job["missing-skills"] || ""}
+
+        `.toLowerCase();
+
+
+        const categoryOK =
+          activeFilter ===
+          "All" ||
+          category ===
+          activeFilter;
+
+
+        const searchOK =
+          !searchText ||
+          searchableText.includes(
+            searchText
+          );
+
+
+        return (
+          categoryOK &&
+          searchOK
+        );
+
+      }
+    );
+
+
+  if(
+    filteredJobs.length === 0
+  ){
+
+    jobsContainer.innerHTML = `
+
+      <div class="note">
+
+        No matching jobs found.
+
+      </div>
+
+    `;
+
+    return;
+
+  }
+
+
+  jobsContainer.innerHTML =
+    filteredJobs
+      .map(
+        createJobCard
+      )
+      .join("");
+
+}
+
+
+/* =========================================================
+   CREATE JOB CARD
+   ========================================================= */
+
+function createJobCard(
+  job
+){
+
+  const score =
+    Number(
+      job.fit_score || 0
+    );
+
+
+  const category =
+    getCategory(job);
+
+
+  const categoryClass =
+    getCategoryClass(
+      category
+    );
+
+
+  const title =
+    escapeHTML(
+      job.title ||
+      "Java Developer"
+    );
+
+
+  const company =
+    escapeHTML(
+      job.company ||
+      "Company Not Specified"
+    );
+
+
+  const location =
+    escapeHTML(
+      job.location ||
+      "India"
+    );
+
+
+  const experience =
+    escapeHTML(
+      job.experience ||
+      "0–3 years"
+    );
+
+
+  const summary =
+    escapeHTML(
+      job.summary ||
+      "Java development opportunity."
+    );
+
+
+  const whyMatch =
+    escapeHTML(
+      job["why-match"] ||
+      "Matches your Java development profile."
+    );
+
+
+  const missingSkills =
+    escapeHTML(
+      job["missing-skills"] ||
+      "No major missing skills identified."
+    );
+
+
+  const applyUrl =
+    job["apply-url"] ||
+    "#";
+
+
+  const postedDate =
+    job["posted-at"]
+      ? formatPostedDate(
+          job["posted-at"]
+        )
+      : "Recently";
+
+
+  return `
+
+    <article
+      class="job-card"
+    >
+
+
+      <div class="card-top">
+
+
+        <span
+          class="badge ${categoryClass}"
+        >
+
+          ${category}
+
+        </span>
+
+
+        <span class="score">
+
+          ${score}
+
+          <small>
+            /100
+          </small>
+
+        </span>
+
+
+      </div>
+
+
+      <h3>
+
+        ${title}
+
+      </h3>
+
+
+      <div class="company">
+
+        ${company}
+
+      </div>
+
+
+      <div class="meta">
+
+        📍 ${location}
+
+        ·
+
+        🧭 ${experience}
+
+        ·
+
+        🕐 ${postedDate}
+
+      </div>
+
+
+      <p>
+
+        ${summary}
+
+      </p>
+
+
+      <div class="mini">
+
+        <b>
+          Why you match
+        </b>
+
+        <br>
+
+        ${whyMatch}
+
+      </div>
+
+
+      <div class="mini gap">
+
+        <b>
+          Missing / weaker evidence
+        </b>
+
+        <br>
+
+        ${missingSkills}
+
+      </div>
+
+
+      <a
+        class="apply"
+        href="${escapeAttribute(
+          applyUrl
+        )}"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+
+        Direct Apply ↗
+
+      </a>
+
+
+    </article>
+
+  `;
+
+}
+
+
+/* =========================================================
+   FORMAT DATE
+   ========================================================= */
+
+function formatPostedDate(
+  dateString
+){
+
+  const date =
+    new Date(
+      dateString
+    );
+
+
+  if(
+    Number.isNaN(
+      date.getTime()
+    )
+  ){
+
+    return "Recently";
+
+  }
+
+
+  return date.toLocaleDateString(
+    "en-GB",
+    {
+      day:"2-digit",
+      month:"short",
+      year:"numeric"
+    }
+  );
+
+}
+
+
+/* =========================================================
+   DASHBOARD STATS
+   ========================================================= */
+
+function updateDashboardStats(){
+
+  const total =
+    allJobs.length;
+
+
+  const applyFirst =
+    allJobs.filter(
+      job =>
+        getCategory(job) ===
+        "Apply First"
+    ).length;
+
+
+  const goodMatch =
+    allJobs.filter(
+      job =>
+        getCategory(job) ===
+        "Good Match"
+    ).length;
+
+
+  const stretch =
+    allJobs.filter(
+      job =>
+        getCategory(job) ===
+        "Stretch Role"
+    ).length;
+
+
+  document
+    .getElementById(
+      "totalJobs"
+    )
+    .textContent =
+      total;
+
+
+  document
+    .getElementById(
+      "applyFirstCount"
+    )
+    .textContent =
+      applyFirst;
+
+
+  document
+    .getElementById(
+      "goodMatchCount"
+    )
+    .textContent =
+      goodMatch;
+
+
+  document
+    .getElementById(
+      "stretchCount"
+    )
+    .textContent =
+      stretch;
+
+
+  updateFilterButtons();
+
+}
+
+
+/* =========================================================
+   FILTER BUTTON COUNTS
+   ========================================================= */
+
+function updateFilterButtons(){
+
+  const buttons =
+    document.querySelectorAll(
+      ".filter"
+    );
+
+
+  buttons.forEach(
+    button => {
+
+      const filter =
+        button.dataset.filter;
+
+
+      let count = 0;
+
+
+      if(
+        filter === "All"
+      ){
+
+        count =
+          allJobs.length;
+
+      }else{
+
+        count =
+          allJobs.filter(
+            job =>
+              getCategory(job) ===
+              filter
+          ).length;
+
+      }
+
+
+      button.textContent =
+        `${filter} (${count})`;
+
+    }
+  );
+
+}
+
+
+/* =========================================================
+   SEARCH
+   ========================================================= */
 
 document
-  .getElementById('search')
-  .addEventListener('input', applyFilter);
+  .getElementById(
+    "search"
+  )
+  .addEventListener(
+    "input",
+    renderJobs
+  );
+
+
+/* =========================================================
+   FILTERS
+   ========================================================= */
+
+document
+  .querySelectorAll(
+    ".filter"
+  )
+  .forEach(
+    button => {
+
+      button.addEventListener(
+        "click",
+        () => {
+
+          document
+            .querySelectorAll(
+              ".filter"
+            )
+            .forEach(
+              x =>
+                x.classList
+                  .remove(
+                    "active"
+                  )
+            );
+
+
+          button.classList
+            .add("active");
+
+
+          activeFilter =
+            button.dataset.filter;
+
+
+          renderJobs();
+
+        }
+      );
+
+    }
+  );
+
+
+/* =========================================================
+   COPY RECRUITER MESSAGE
+   ========================================================= */
+
+function copyMessage(
+  id
+){
+
+  const element =
+    document.getElementById(
+      id
+    );
+
+
+  if(!element){
+    return;
+  }
+
+
+  navigator.clipboard
+    .writeText(
+      element.innerText
+    )
+    .then(
+      () => {
+
+        alert(
+          "Message copied!"
+        );
+
+      }
+    )
+    .catch(
+      () => {
+
+        alert(
+          "Unable to copy message."
+        );
+
+      }
+    );
+
+}
+
+
+/* =========================================================
+   SECURITY
+   ========================================================= */
+
+function escapeHTML(
+  value
+){
+
+  return String(value)
+
+    .replace(
+      /&/g,
+      "&amp;"
+    )
+
+    .replace(
+      /</g,
+      "&lt;"
+    )
+
+    .replace(
+      />/g,
+      "&gt;"
+    )
+
+    .replace(
+      /"/g,
+      "&quot;"
+    )
+
+    .replace(
+      /'/g,
+      "&#039;"
+    );
+
+}
+
+
+function escapeAttribute(
+  value
+){
+
+  return String(value)
+    .replace(
+      /"/g,
+      "&quot;"
+    )
+    .replace(
+      /</g,
+      "&lt;"
+    )
+    .replace(
+      />/g,
+      "&gt;"
+    );
+
+}
+
+
+/* =========================================================
+   START DASHBOARD
+   ========================================================= */
+
+updateResearchDate();
+
+loadJobs();
+
 
 </script>
 
+
 </body>
+
 </html>
