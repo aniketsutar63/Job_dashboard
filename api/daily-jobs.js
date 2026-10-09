@@ -2,73 +2,116 @@
 module.exports = async (req, res) => {
   try {
     // 1. Environment variables
-    const cleanJobKey = process.env.CLEANJOBDATA_API_KEY;
-    const rawSupabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const supabaseKey = process.env.SUPABASE_SECRET_KEY;
+    const apiKey = process.env.CLEANJOBDATA_API_KEY;
+    const rawUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const dbKey = process.env.SUPABASE_SECRET_KEY;
 
-    if (!cleanJobKey || !rawSupabaseUrl || !supabaseKey) {
+    if (!apiKey || !rawUrl || !dbKey) {
       return res.status(500).json({
         success: false,
-        error: "Required API environment variables are missing",
-        cleanJobKeyFound: !!cleanJobKey,
-        supabaseUrlFound: !!rawSupabaseUrl,
-        supabaseKeyFound: !!supabaseKey
+        error: "Required environment variables are missing",
+        apiKeyFound: !!apiKey,
+        supabaseUrlFound: !!rawUrl,
+        supabaseKeyFound: !!dbKey
       });
     }
 
-    const supabaseUrl = rawSupabaseUrl.trim().replace(/\/+$/, "");
-    const supabaseRestUrl = supabaseUrl.endsWith("/rest/v1")
-      ? supabaseUrl
-      : `${supabaseUrl}/rest/v1`;
+    const baseUrl = rawUrl.trim().replace(/\/+$/, "");
+    const restUrl = baseUrl.endsWith("/rest/v1")
+      ? baseUrl
+      : `${baseUrl}/rest/v1`;
 
-    const supabaseHeaders = {
-      apikey: supabaseKey,
-      Authorization: `Bearer ${supabaseKey}`
+    const dbHeaders = {
+      apikey: dbKey,
+      Authorization: `Bearer ${dbKey}`
     };
 
-    // 2. Fetch more recent Java jobs.
-    // country_id=101 keeps the search focused on India.
-    const params = new URLSearchParams({
-      country_id: "101",
-      title: "Java",
-      experience_level: "EN,MI",
-      created_max_age: "7d",
-      limit: "50",
-      sort_by: "published",
-      include_expired: "false",
-      extra_fields: "description"
-    });
+    // 2. Search several keywords.
+    // The provider may impose its own limit on results.
+    const searchTerms = [
+      "Java",
+      "Spring Boot",
+      "Java Backend",
+      "Java Full Stack"
+    ];
 
-    const sourceResponse = await fetch(
-      `https://api.cleanjobdata.com/jobs?${params.toString()}`,
-      {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${cleanJobKey}`
+    async function searchJobs(keyword) {
+      const params = new URLSearchParams({
+        country_id: "101",
+        title: keyword,
+        experience_level: "EN,MI",
+        created_max_age: "7d",
+        limit: "50",
+        sort_by: "published",
+        include_expired: "false",
+        extra_fields: "description"
+      });
+
+      const response = await fetch(
+        `https://api.cleanjobdata.com/jobs?${params.toString()}`,
+        {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${apiKey}`
+          }
         }
+      );
+
+      if (!response.ok) {
+        return {
+          keyword,
+          success: false,
+          status: response.status,
+          jobs: []
+        };
       }
+
+      const result = await response.json();
+
+      if (!result || !Array.isArray(result.data)) {
+        return {
+          keyword,
+          success: false,
+          status: 502,
+          jobs: []
+        };
+      }
+
+      return {
+        keyword,
+        success: true,
+        jobs: result.data
+      };
+    }
+
+    // Run all searches independently. A failed search does not
+    // discard results from successful searches.
+    const searchResults = await Promise.all(
+      searchTerms.map(searchJobs)
     );
 
-    if (!sourceResponse.ok) {
-      const details = await sourceResponse.text();
+    const successfulSearches = searchResults.filter(
+      result => result.success
+    );
 
+    const failedSearches = searchResults
+      .filter(result => !result.success)
+      .map(result => ({
+        keyword: result.keyword,
+        status: result.status
+      }));
+
+    if (successfulSearches.length === 0) {
       return res.status(502).json({
         success: false,
-        error: `CleanJobData API error: ${sourceResponse.status}`,
-        details
+        error: "All CleanJobData searches failed. Existing jobs were preserved.",
+        failedSearches
       });
     }
 
-    const sourceResult = await sourceResponse.json();
-
-    if (!sourceResult || !Array.isArray(sourceResult.data)) {
-      return res.status(502).json({
-        success: false,
-        error: "CleanJobData returned an invalid response"
-      });
-    }
-
-    const sourceJobs = sourceResult.data;
+    const allJobs = successfulSearches.flatMap(
+      result => result.jobs
+    );
 
     // 3. Normalization helpers
     function textValue(value) {
@@ -141,8 +184,7 @@ module.exports = async (req, res) => {
       );
     }
 
-    // Matching title + company + location is important:
-    // different URLs can refer to the same advertised job.
+    // Compare both the normalized job identity and the URL.
     function getKeys(job) {
       const title = normalize(job.title);
       const company = normalize(getCompany(job));
@@ -168,18 +210,23 @@ module.exports = async (req, res) => {
       return jobs.filter(job => {
         const keys = getKeys(job);
 
-        if (keys.length === 0) return true;
-        if (keys.some(key => seen.has(key))) return false;
+        // Retain records when there is not enough information
+        // to determine whether they are duplicates.
+        if (!keys.length) return true;
+
+        if (keys.some(key => seen.has(key))) {
+          return false;
+        }
 
         keys.forEach(key => seen.add(key));
         return true;
       });
     }
 
-    // 4. Remove repeated source IDs first
+    // 4. Remove duplicate source IDs, then cross-search duplicates.
     const sourceIds = new Set();
 
-    const uniqueById = sourceJobs.filter(job => {
+    const uniqueById = allJobs.filter(job => {
       if (!job || typeof job !== "object") return false;
       if (job.id == null) return true;
 
@@ -193,41 +240,44 @@ module.exports = async (req, res) => {
 
     const uniqueSourceJobs = deduplicate(uniqueById);
 
-    // 5. Filter suitable job titles and locations.
-    // The API already requests India-based results.
-    // Accept remote listings even when their location is simply
-    // marked "Remote" or "Work from home".
+    // 5. Filter suitable job roles.
+    // Do not restrict to a hard-coded city list: the source
+    // search is already set to India, and remote listings may
+    // have a location such as "Remote".
     const relevantJobs = uniqueSourceJobs.filter(job => {
       if (job.is_active === false) return false;
 
       const title = textValue(job.title).toLowerCase();
-      const location = getLocation(job).toLowerCase();
       const description = textValue(job.description).toLowerCase();
-
+      const location = getLocation(job).toLowerCase();
       const combined = `${title} ${description}`;
 
       const relevantTitle =
         title.includes("java") ||
+        title.includes("spring boot") ||
         title.includes("software developer") ||
         title.includes("software engineer") ||
         title.includes("backend developer") ||
         title.includes("backend engineer") ||
         title.includes("full stack") ||
         title.includes("application developer") ||
-        title.includes("associate developer");
+        title.includes("associate developer") ||
+        title.includes("associate software engineer") ||
+        title.includes("junior developer");
 
       if (!relevantTitle) return false;
 
+      // Exclude explicitly senior/lead-only positions.
       const seniorTitle =
         /\bsenior\b|\bsr\.?\b|\blead\b|\bprincipal\b|\barchitect\b|\bdirector\b|\bmanager\b|\bhead of\b/i
           .test(title);
 
       if (seniorTitle) return false;
 
-      // Filter clear minimum experience requirements above 2 years.
-      // Do not reject a job when experience is not specified.
+      // Exclude clearly stated minimum experience above 2 years.
+      // Missing experience information is not automatically rejected.
       const experiencePatterns = [
-        /minimum(?: of)?\s*(\d+)\s*(?:\+?\s*)years?/i,
+        /minimum(?: of)?\s*(\d+)\s*\+?\s*years?/i,
         /at least\s*(\d+)\s*years?/i,
         /(\d+)\s*\+\s*years?\s+(?:of\s+)?experience/i,
         /(\d+)\s*-\s*(\d+)\s*years?\s+(?:of\s+)?experience/i,
@@ -237,27 +287,25 @@ module.exports = async (req, res) => {
       for (const pattern of experiencePatterns) {
         const match = combined.match(pattern);
 
-        if (match) {
-          const minimum = Number(match[1]);
+        if (!match) continue;
 
-          if (minimum > 2) return false;
-        }
+        const minimum = Number(match[1]);
+
+        if (minimum > 2) return false;
       }
 
-      // CleanJobData is queried with India's country ID.
-      // Don't apply a hard-coded city allowlist, so Pune and other
-      // Indian cities are not unnecessarily excluded.
+      // The country filter is handled by CleanJobData.
+      // Accept listings with a location or an explicit remote marker.
       const remote =
         /\bremote\b|\bwork from home\b|\bwfh\b|\bhybrid\b/i
           .test(`${title} ${location} ${description}`);
 
-      // Keep listings with a location, including remote listings.
-      return !!location || remote;
+      return Boolean(location || remote);
     });
 
-    const uniqueRelevantJobs = deduplicate(relevantJobs);
+    const finalCandidates = deduplicate(relevantJobs);
 
-    // 6. Convert source jobs to the existing database schema
+    // 6. Format data for Supabase
     function formatExperience(level) {
       const value = String(level || "").toUpperCase();
 
@@ -298,9 +346,9 @@ module.exports = async (req, res) => {
         .replace(/\s+/g, " ")
         .trim();
 
-      return description
-        ? description.substring(0, 500)
-        : `${textValue(job.title) || "Java Developer"} opportunity at ${getCompany(job) || "the company"}.`;
+      if (description) return description.substring(0, 500);
+
+      return `${textValue(job.title) || "Java Developer"} opportunity at ${getCompany(job) || "the company"}.`;
     }
 
     function createWhyMatch(job) {
@@ -314,10 +362,13 @@ module.exports = async (req, res) => {
       if (content.includes("java")) skills.push("Java");
       if (content.includes("spring boot")) skills.push("Spring Boot");
       if (content.includes("rest")) skills.push("REST APIs");
+
       if (content.includes("sql") || content.includes("mysql")) {
         skills.push("SQL/MySQL");
       }
+
       if (content.includes("react")) skills.push("React");
+
       if (content.includes("hibernate") || content.includes("jpa")) {
         skills.push("Hibernate/JPA");
       }
@@ -345,35 +396,36 @@ module.exports = async (req, res) => {
       return missing.join(", ");
     }
 
-    const incomingJobs = uniqueRelevantJobs
-      .filter(job => !!getApplyUrl(job))
-      .map(job => ({
-        title: textValue(job.title) || "Java Developer",
-        company: getCompany(job) || "Unknown",
-        location: getLocation(job) || "India / Remote",
-        experience: formatExperience(job.experience_level),
-        "posted-at":
-          job.published ||
-          job.posted_at ||
-          job["posted-at"] ||
-          new Date().toISOString(),
-        category: "Java / Backend",
-        fit_score: calculateFitScore(job),
-        summary: createSummary(job),
-        "why-match": createWhyMatch(job),
-        "missing-skills": createMissingSkills(job),
-        "apply-url": getApplyUrl(job),
-        source: "CleanJobData"
-      }));
+    const incomingJobs = deduplicate(
+      finalCandidates
+        .filter(job => !!getApplyUrl(job))
+        .map(job => ({
+          title: textValue(job.title) || "Java Developer",
+          company: getCompany(job) || "Unknown",
+          location: getLocation(job) || "India / Remote",
+          experience: formatExperience(job.experience_level),
+          "posted-at":
+            job.published ||
+            job.posted_at ||
+            job["posted-at"] ||
+            new Date().toISOString(),
+          category: "Java / Backend",
+          fit_score: calculateFitScore(job),
+          summary: createSummary(job),
+          "why-match": createWhyMatch(job),
+          "missing-skills": createMissingSkills(job),
+          "apply-url": getApplyUrl(job),
+          source: "CleanJobData"
+        }))
+    );
 
-    // 7. Read existing jobs BEFORE changing the database.
-    // If this fails, stop safely and retain the current records.
+    // 7. Read existing records before making changes.
     const existingResponse = await fetch(
-      `${supabaseRestUrl}/jobs?select=*`,
+      `${restUrl}/jobs?select=*`,
       {
         method: "GET",
         headers: {
-          ...supabaseHeaders,
+          ...dbHeaders,
           Accept: "application/json"
         }
       }
@@ -384,7 +436,7 @@ module.exports = async (req, res) => {
 
       return res.status(502).json({
         success: false,
-        error: "Could not read existing Supabase jobs",
+        error: "Could not read existing jobs",
         details,
         existingJobsPreserved: true
       });
@@ -395,31 +447,73 @@ module.exports = async (req, res) => {
     if (!Array.isArray(existingJobs)) {
       return res.status(502).json({
         success: false,
-        error: "Supabase returned an invalid jobs response",
+        error: "Invalid response from Supabase",
         existingJobsPreserved: true
       });
     }
 
-    // 8. Keep existing recent jobs and identify existing duplicates.
-    const now = Date.now();
-    const retentionDays = 7;
-    const retentionMs = retentionDays * 24 * 60 * 60 * 1000;
+    // 8. Retain existing recent records and remove duplicates
+    // by deleting duplicate IDs individually.
+    const cutoff = Date.now() - 7 * 24 * 60 * 60 * 1000;
 
-    const recentExistingJobs = existingJobs.filter(job => {
+    const retainedExisting = existingJobs.filter(job => {
       const dateValue = job["posted-at"] || job.created_at;
       const timestamp = dateValue ? Date.parse(dateValue) : NaN;
 
-      // Keep undated records rather than deleting potentially useful jobs.
+      // Preserve records with unknown dates rather than deleting them.
       if (!Number.isFinite(timestamp)) return true;
 
-      return now - timestamp <= retentionMs;
+      return timestamp >= cutoff;
     });
 
-    // Prefer existing records as the initial set, then add only new jobs.
-    const keptJobs = deduplicate(recentExistingJobs);
+    const seenExistingKeys = new Set();
+    const keptExisting = [];
+    const duplicateIds = [];
+
+    for (const job of retainedExisting) {
+      const keys = getKeys(job);
+
+      if (
+        keys.length &&
+        keys.some(key => seenExistingKeys.has(key))
+      ) {
+        if (job.id != null) duplicateIds.push(String(job.id));
+        continue;
+      }
+
+      keys.forEach(key => seenExistingKeys.add(key));
+      keptExisting.push(job);
+    }
+
+    // 9. Remove duplicate saved rows individually.
+    // Do not clear the complete jobs table.
+    for (let i = 0; i < duplicateIds.length; i += 50) {
+      const batch = duplicateIds.slice(i, i + 50);
+      const deleteUrl = new URL(`${restUrl}/jobs`);
+
+      deleteUrl.searchParams.set("id", `in.(${batch.join(",")})`);
+
+      const deleteResponse = await fetch(deleteUrl.toString(), {
+        method: "DELETE",
+        headers: dbHeaders
+      });
+
+      if (!deleteResponse.ok) {
+        const details = await deleteResponse.text();
+
+        return res.status(502).json({
+          success: false,
+          error: "Could not remove duplicate saved records",
+          details,
+          existingJobsPreserved: true
+        });
+      }
+    }
+
+    // 10. Insert only jobs that do not match retained records.
     const knownKeys = new Set();
 
-    keptJobs.forEach(job => {
+    keptExisting.forEach(job => {
       getKeys(job).forEach(key => knownKeys.add(key));
     });
 
@@ -436,86 +530,18 @@ module.exports = async (req, res) => {
       keys.forEach(key => knownKeys.add(key));
     }
 
-    // 9. Remove duplicate old records by their IDs only.
-    // Do not clear the whole table.
-    const keepIds = new Set(
-      keptJobs
-        .map(job => job.id)
-        .filter(id => id != null)
-        .map(String)
-    );
-
-    const duplicateIds = [];
-
-    for (const job of recentExistingJobs) {
-      if (job.id == null) continue;
-
-      const id = String(job.id);
-      if (!keepIds.has(id)) continue;
-
-      // A kept ID is the first record for its identity.
-      // Duplicate detection below chooses one record per identity.
-    }
-
-    // Determine which existing IDs are duplicates, preserving the
-    // first occurrence of each job identity.
-    const existingKeysSeen = new Set();
-    const idsToDelete = [];
-
-    for (const job of recentExistingJobs) {
-      const keys = getKeys(job);
-
-      if (!keys.length) continue;
-
-      if (keys.some(key => existingKeysSeen.has(key))) {
-        if (job.id != null) idsToDelete.push(String(job.id));
-        continue;
-      }
-
-      keys.forEach(key => existingKeysSeen.add(key));
-    }
-
-    // Remove duplicate existing records individually.
-    // Batch small groups to keep URL length manageable.
-    for (let i = 0; i < idsToDelete.length; i += 50) {
-      const batch = idsToDelete.slice(i, i + 50);
-
-      const deleteUrl = new URL(`${supabaseRestUrl}/jobs`);
-      deleteUrl.searchParams.set("id", `in.(${batch.join(",")})`);
-
-      const deleteResponse = await fetch(deleteUrl.toString(), {
-        method: "DELETE",
-        headers: supabaseHeaders
-      });
-
-      if (!deleteResponse.ok) {
-        const details = await deleteResponse.text();
-
-        return res.status(502).json({
-          success: false,
-          error: "Could not remove duplicate existing records",
-          details,
-          newJobsInserted: 0
-        });
-      }
-    }
-
-    // 10. Insert only new jobs, retaining existing records.
     let insertedCount = 0;
 
     if (jobsToInsert.length > 0) {
-      const insertResponse = await fetch(
-        `${supabaseRestUrl}/jobs`,
-        {
-          method: "POST",
-          headers: {
-            ...supabaseHeaders,
-            "Content-Type": "application/json",
-            Prefer: "return=representation"
-          },
-          body: JSON.stringify(jobsToInsert)
-        }
-      );
+      const insertResponse = await fetch(`${restUrl}/jobs`, {
+        method: "POST",
+        headers: {
+          ...dbHeaders,
+          "Content-Type": "application/json",
+          Prefer: "return=representation"
+        },
+        body: JSON.stringify(jobsToInsert)
+      });
 
       if (!insertResponse.ok) {
         const details = await insertResponse.text();
@@ -538,20 +564,23 @@ module.exports = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      searched: sourceJobs.length,
-      unique: uniqueSourceJobs.length,
-      relevant: uniqueRelevantJobs.length,
+      search_terms: searchTerms,
+      successful_searches: successfulSearches.length,
+      failed_searches: failedSearches,
+      searched: allJobs.length,
+      unique_source_jobs: uniqueSourceJobs.length,
+      relevant: finalCandidates.length,
       incoming_unique: incomingJobs.length,
       existing_before_sync: existingJobs.length,
-      existing_duplicates_removed: idsToDelete.length,
+      existing_duplicates_removed: duplicateIds.length,
       new_jobs_found: jobsToInsert.length,
       inserted: insertedCount,
       cleared: false,
       retained_existing_jobs: true,
       search_window: "7 days",
-      requested_limit: 50,
+      requested_limit_per_search: 50,
       message:
-        "Job sync completed. Existing jobs were retained, duplicates were cleaned up, and new unique jobs were added."
+        "Multi-keyword job search completed. Existing records were retained, duplicates were checked, and new unique jobs were added."
     });
 
   } catch (error) {
