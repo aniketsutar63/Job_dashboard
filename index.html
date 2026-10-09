@@ -734,6 +734,22 @@ footer{
   .job-card:nth-child(4n+3) { border-top: 4px solid #7952C7; }
   .job-card:nth-child(4n) { border-top: 4px solid #D97706; }
   #jobs { margin-top: 14px; }
+
+  .experience-filter-wrap {
+    margin: 18px 0 8px; padding: 16px; background: #fff;
+    border: 1px solid var(--line); border-radius: 14px;
+  }
+  .experience-filter-title { display: block; margin-bottom: 10px; font-weight: 800; }
+  .experience-filters { display: flex; flex-wrap: wrap; gap: 8px; }
+  .experience-filter.active { background: #172033; color: #fff; border-color: #172033; }
+  .experience-label {
+    display: inline-flex; width: fit-content; margin-top: 8px; padding: 5px 9px;
+    border-radius: 999px; font-size: 11px; font-weight: 800;
+  }
+  .experience-preferred { color: #166534; background: #dcfce7; }
+  .experience-experienced { color: #92400e; background: #fef3c7; }
+  .experience-review { color: #6b21a8; background: #f3e8ff; }
+  .experience-unspecified { color: #475569; background: #e2e8f0; }
 </style>
 
 </head>
@@ -1066,6 +1082,18 @@ Stretch Role (0)
 
 
 
+
+<div class="experience-filter-wrap">
+  <span class="experience-filter-title">Filter by required experience</span>
+  <div class="experience-filters" id="experienceFilters">
+    <button class="experience-filter active" data-experience-filter="All">All experience (0)</button>
+    <button class="experience-filter" data-experience-filter="preferred">Preferred: 0–2 years (0)</button>
+    <button class="experience-filter" data-experience-filter="experienced">Other: 3+ years (0)</button>
+    <button class="experience-filter" data-experience-filter="review">Review range (0)</button>
+    <button class="experience-filter" data-experience-filter="unspecified">Not specified (0)</button>
+  </div>
+  <p style="font-size:12px;margin:10px 0 0">Unspecified jobs are not automatically considered entry-level.</p>
+</div>
 
 <!-- Live jobs are rendered here by loadJobs() from /api/job-data -->
 <section id="jobs" class="grid" aria-live="polite">
@@ -1434,6 +1462,7 @@ not employer scores.
 let allJobs = [];
 
 let activeFilter = "All";
+let activeExperienceFilter = "All";
 
 
 /* =========================================================
@@ -1637,6 +1666,75 @@ function getCategoryClass(
    RENDER JOBS
    ========================================================= */
 
+function getExperienceGroup(job) {
+  const experience = String(job.experience || "").toLowerCase();
+  const category = String(job.category || "").toLowerCase();
+
+  if (category.includes("preferred") ||
+      /\b0\s*[–-]\s*2\s*years?\b/.test(experience) ||
+      experience.includes("entry level")) return "preferred";
+
+  if (category.includes("overlapping") || category.includes("review")) return "review";
+
+  if (category.includes("3+ years") ||
+      /\b3\+\s*years?\b/.test(experience) ||
+      /\b[3-9]\+\s*years?\b/.test(experience)) return "experienced";
+
+  const range = experience.match(/(\d+)\s*[–-]\s*(\d+)\s*years?/);
+  if (range) {
+    const min = Number(range[1]), max = Number(range[2]);
+    if (max <= 2) return "preferred";
+    if (min >= 3) return "experienced";
+    return "review";
+  }
+
+  if (category.includes("not specified") ||
+      experience.includes("not specified") ||
+      experience === "" || experience === "mid level") return "unspecified";
+
+  const minimum = experience.match(/(\d+)\+\s*years?/);
+  if (minimum) return Number(minimum[1]) <= 2 ? "preferred" : "experienced";
+
+  return "unspecified";
+}
+
+function getExperienceLabel(group) {
+  return {
+    preferred: "Preferred · 0–2 years",
+    experienced: "Other · 3+ years",
+    review: "Review · overlapping range",
+    unspecified: "Experience not specified"
+  }[group] || "Experience not specified";
+}
+
+function getExperienceClass(group) {
+  return {
+    preferred: "experience-preferred",
+    experienced: "experience-experienced",
+    review: "experience-review",
+    unspecified: "experience-unspecified"
+  }[group] || "experience-unspecified";
+}
+
+function updateExperienceFilterButtons() {
+  const counts = { All: allJobs.length, preferred: 0, experienced: 0, review: 0, unspecified: 0 };
+  allJobs.forEach(job => counts[getExperienceGroup(job)]++);
+
+  const labels = {
+    All: "All experience",
+    preferred: "Preferred: 0–2 years",
+    experienced: "Other: 3+ years",
+    review: "Review range",
+    unspecified: "Not specified"
+  };
+
+  document.querySelectorAll(".experience-filter").forEach(button => {
+    const filter = button.dataset.experienceFilter;
+    button.textContent = `${labels[filter]} (${counts[filter] || 0})`;
+    button.classList.toggle("active", filter === activeExperienceFilter);
+  });
+}
+
 function renderJobs(){
 
   const jobsContainer =
@@ -1667,7 +1765,9 @@ function renderJobs(){
           getCategory(job);
 
 
-        const searchableText = `
+        
+        const experienceGroup = getExperienceGroup(job);
+const searchableText = `
 
           ${job.title || ""}
 
@@ -1700,9 +1800,14 @@ function renderJobs(){
           );
 
 
+        const experienceOK =
+          activeExperienceFilter === "All" ||
+          experienceGroup === activeExperienceFilter;
+
         return (
           categoryOK &&
-          searchOK
+          searchOK &&
+          experienceOK
         );
 
       }
@@ -1856,6 +1961,9 @@ function createJobCard(
 
       </div>
 
+
+      
+      <span class="experience-label ${getExperienceClass(getExperienceGroup(job))}">${escapeHTML(getExperienceLabel(getExperienceGroup(job)))}</span>
 
       <h3>
 
@@ -2044,6 +2152,7 @@ function updateDashboardStats(){
 
 
   updateFilterButtons();
+  updateExperienceFilterButtons();
 
 }
 
@@ -2160,6 +2269,17 @@ document
 /* =========================================================
    COPY RECRUITER MESSAGE
    ========================================================= */
+
+document.querySelectorAll(".experience-filter").forEach(button => {
+  button.addEventListener("click", () => {
+    activeExperienceFilter = button.dataset.experienceFilter;
+    document.querySelectorAll(".experience-filter").forEach(item => {
+      item.classList.toggle("active", item.dataset.experienceFilter === activeExperienceFilter);
+    });
+    updateExperienceFilterButtons();
+    renderJobs();
+  });
+});
 
 function copyMessage(
   id
