@@ -23,11 +23,12 @@ module.exports = async (req, res) => {
       Authorization: `Bearer ${supabaseKey}`
     };
 
-    // 2. One source request per sync to reduce rate limiting
+    // 2. Fetch jobs with ONE API request to reduce rate-limit errors.
+    // Experience-level filtering is intentionally omitted so that
+    // experienced roles can also be retained in a separate category.
     const params = new URLSearchParams({
       country_id: "101",
       title: "Java",
-      experience_level: "EN,MI",
       created_max_age: "7d",
       limit: "50",
       sort_by: "published",
@@ -50,7 +51,7 @@ module.exports = async (req, res) => {
         success: false,
         error: "CleanJobData rate limit reached",
         retry_after: sourceResponse.headers.get("retry-after"),
-        message: "Existing jobs were not changed. Wait before syncing again."
+        message: "Existing jobs were not changed. Wait before trying again."
       });
     }
 
@@ -73,7 +74,7 @@ module.exports = async (req, res) => {
 
     const sourceJobs = sourceResult.data;
 
-    // 3. Helpers
+    // 3. Common helpers
     function textValue(value) {
       if (value == null) return "";
 
@@ -143,17 +144,19 @@ module.exports = async (req, res) => {
     }
 
     function getKeys(job) {
+      const keys = [];
       const title = normalize(job.title);
       const company = normalize(getCompany(job));
       const location = normalize(getLocation(job));
       const url = normalizeUrl(getApplyUrl(job));
-      const keys = [];
 
       if (title && company && location) {
         keys.push(`job:${title}|${company}|${location}`);
       }
 
-      if (url) keys.push(`url:${url}`);
+      if (url) {
+        keys.push(`url:${url}`);
+      }
 
       return keys;
     }
@@ -172,7 +175,14 @@ module.exports = async (req, res) => {
       });
     }
 
-    // 4. Remove duplicate source IDs and duplicate jobs
+    function matchesJob(a, b) {
+      const aKeys = getKeys(a);
+      const bKeys = new Set(getKeys(b));
+
+      return aKeys.some(key => bKeys.has(key));
+    }
+
+    // 4. Remove duplicate source IDs and duplicate source jobs
     const sourceIds = new Set();
 
     const uniqueById = sourceJobs.filter(job => {
@@ -189,45 +199,171 @@ module.exports = async (req, res) => {
 
     const uniqueSourceJobs = deduplicate(uniqueById);
 
-    // 5. Detect explicit minimum experience requirements.
-    // Returns null when no clear minimum is found.
-    function getRequiredYears(job) {
-      const description = textValue(job.description)
+    // 5. Detect minimum and maximum experience from descriptions.
+    // Unknown means the source did not provide a reliable requirement.
+    function getExperience(job) {
+      const description = textValue(
+        job.description || job.summary
+      )
         .replace(/<[^>]*>/g, " ")
         .replace(/&nbsp;/gi, " ")
         .replace(/\s+/g, " ");
 
       const title = textValue(job.title);
-      const text = `${title}. ${description}`;
+      const content = `${title}. ${description}`;
 
-      const patterns = [
-        /\bminimum\s+(?:of\s+)?(\d+)\s*\+?\s*years?\b/i,
-        /\bmin\.?\s+experience\s*:\s*(\d+)\s*\+?\s*years?\b/i,
+      // Prefer explicit experience ranges, such as:
+      // "2-4 years of experience" or "1 to 2 years experience".
+      const rangePatterns = [
+        /\b(?:minimum|min\.?)\s*(?:experience)?\s*:?\s*(\d+)\s*(?:-|to)\s*(\d+)\s*years?\b/i,
+        /\b(\d+)\s*(?:-|to)\s*(\d+)\s*years?\s+(?:of\s+)?(?:relevant\s+)?experience\b/i,
+        /\bexperience\s*(?:of|:)?\s*(\d+)\s*(?:-|to)\s*(\d+)\s*years?\b/i
+      ];
+
+      for (const pattern of rangePatterns) {
+        const match = content.match(pattern);
+
+        if (match) {
+          const min = Number(match[1]);
+          const max = Number(match[2]);
+
+          if (max >= min) {
+            return {
+              min,
+              max,
+              source: "description"
+            };
+          }
+        }
+      }
+
+      // Explicit minimum requirements and X+ years.
+      const minimumPatterns = [
+        /\bmin\.?\s*experience\s*:\s*(\d+)\s*\+?\s*years?\b/i,
         /\bminimum\s+experience\s*:\s*(\d+)\s*\+?\s*years?\b/i,
+        /\bminimum\s+(?:of\s+)?(\d+)\s*\+?\s*years?\b/i,
         /\bat\s+least\s+(\d+)\s*years?\b/i,
         /\b(\d+)\s*\+\s*years?\s+(?:of\s+)?experience\b/i,
         /\bexperience\s*:\s*(\d+)\s*\+?\s*years?\b/i,
         /\brequires?\s+(\d+)\s*\+?\s*years?\s+(?:of\s+)?experience\b/i,
-        /\b(\d+)\s*-\s*\d+\s+years?\s+(?:of\s+)?experience\b/i,
         /\b(\d+)\s+years?\s+(?:of\s+)?(?:relevant\s+)?experience\s+(?:required|minimum)\b/i
       ];
 
-      for (const pattern of patterns) {
-        const match = text.match(pattern);
+      for (const pattern of minimumPatterns) {
+        const match = content.match(pattern);
 
-        if (match) return Number(match[1]);
+        if (match) {
+          return {
+            min: Number(match[1]),
+            max: null,
+            source: "description"
+          };
+        }
       }
 
-      return null;
+      // Exact "X years of experience" requirement.
+      const exactMatch = content.match(
+        /\b(\d+)\s+years?\s+(?:of\s+)?(?:relevant\s+)?experience\b/i
+      );
+
+      if (exactMatch) {
+        const years = Number(exactMatch[1]);
+
+        return {
+          min: years,
+          max: years,
+          source: "description"
+        };
+      }
+
+      // Fall back to provider's experience category only when
+      // the description does not give a clearer requirement.
+      const level = textValue(job.experience_level).toUpperCase();
+
+      if (level === "EN") {
+        return {
+          min: 0,
+          max: 2,
+          source: "provider_category"
+        };
+      }
+
+      if (level === "MI") {
+        return {
+          min: null,
+          max: null,
+          source: "provider_mid_level"
+        };
+      }
+
+      if (level === "SE" || level === "EX") {
+        return {
+          min: 3,
+          max: null,
+          source: "provider_category"
+        };
+      }
+
+      return {
+        min: null,
+        max: null,
+        source: "unknown"
+      };
     }
 
-    // 6. Filter relevant jobs and record rejection reasons
+    // 6. Assign an explicit category to every job.
+    function classifyExperience(job) {
+      const experience = getExperience(job);
+
+      if (experience.min === null) {
+        return {
+          experience: "Experience Not Specified",
+          category: "Java / Backend — Experience Not Specified",
+          group: "unspecified"
+        };
+      }
+
+      if (
+        experience.max !== null &&
+        experience.max <= 2
+      ) {
+        return {
+          experience: experience.min === 0
+            ? "0–2 years"
+            : `${experience.min}–${experience.max} years`,
+          category: "Java / Backend — Preferred (0–2 Years)",
+          group: "preferred"
+        };
+      }
+
+      if (experience.min >= 3) {
+        return {
+          experience: `${experience.min}+ years`,
+          category: "Java / Backend — Other (3+ Years)",
+          group: "experienced"
+        };
+      }
+
+      // Examples: 2–3 years or 2–4 years.
+      // Do not incorrectly label these as strictly 0–2 years.
+      return {
+        experience:
+          experience.max === null
+            ? `${experience.min}+ years`
+            : `${experience.min}–${experience.max} years`,
+        category: "Java / Backend — Review (Overlapping Experience Range)",
+        group: "review"
+      };
+    }
+
+    // 7. Keep relevant Java-related roles.
+    // Do not exclude a role solely because it is mid-level or senior:
+    // retain it under the appropriate experience category.
     const rejected = {
       inactive: 0,
       irrelevant_title: 0,
-      senior_title: 0,
-      experience_over_2_years: 0,
-      missing_location: 0
+      missing_location: 0,
+      missing_apply_url: 0
     };
 
     const rejectedExamples = [];
@@ -236,54 +372,38 @@ module.exports = async (req, res) => {
       let reason = "";
 
       const title = textValue(job.title).toLowerCase();
-      const description = textValue(job.description).toLowerCase();
-      const location = getLocation(job).toLowerCase();
-      const combined = `${title} ${description}`;
+      const location = getLocation(job);
+
+      const relevantTitle =
+        /\bjava\b/.test(title) ||
+        /\bspring\s*boot\b/.test(title) ||
+        /\bsoftware developer\b/.test(title) ||
+        /\bsoftware engineer\b/.test(title) ||
+        /\bbackend developer\b/.test(title) ||
+        /\bbackend engineer\b/.test(title) ||
+        /\bback end developer\b/.test(title) ||
+        /\bfull stack\b/.test(title) ||
+        /\bapplication developer\b/.test(title) ||
+        /\bassociate developer\b/.test(title) ||
+        /\bjunior developer\b/.test(title);
 
       if (job.is_active === false) {
         reason = "inactive";
-      } else {
-        const relevantTitle =
-          /\bjava\b/.test(title) ||
-          /\bspring\s*boot\b/.test(title) ||
-          /\bsoftware developer\b/.test(title) ||
-          /\bsoftware engineer\b/.test(title) ||
-          /\bbackend developer\b/.test(title) ||
-          /\bbackend engineer\b/.test(title) ||
-          /\bback end developer\b/.test(title) ||
-          /\bfull stack\b/.test(title) ||
-          /\bapplication developer\b/.test(title) ||
-          /\bassociate developer\b/.test(title) ||
-          /\bjunior developer\b/.test(title);
-
-        if (!relevantTitle) {
-          reason = "irrelevant_title";
-        } else if (
-          /\bsenior\b|\bsr\.?\b|\blead\b|\bprincipal\b|\barchitect\b|\bdirector\b|\bmanager\b|\bhead of\b/i
-            .test(title)
-        ) {
-          reason = "senior_title";
-        } else {
-          const years = getRequiredYears(job);
-
-          if (years !== null && years > 2) {
-            reason = "experience_over_2_years";
-          } else if (!location) {
-            reason = "missing_location";
-          }
-        }
+      } else if (!relevantTitle) {
+        reason = "irrelevant_title";
+      } else if (!location) {
+        reason = "missing_location";
+      } else if (!getApplyUrl(job)) {
+        reason = "missing_apply_url";
       }
 
       if (reason) {
         rejected[reason]++;
 
-        // Return only a few examples to help diagnose filtering.
         if (rejectedExamples.length < 15) {
           rejectedExamples.push({
             title: textValue(job.title),
             company: getCompany(job),
-            experience_level: textValue(job.experience_level),
-            detected_minimum_years: getRequiredYears(job),
             reason
           });
         }
@@ -296,26 +416,7 @@ module.exports = async (req, res) => {
 
     const finalCandidates = deduplicate(relevantJobs);
 
-    // 7. Format experience and job details
-    function formatExperience(job) {
-      const years = getRequiredYears(job);
-
-      if (years !== null) {
-        return years === 0
-          ? "Entry Level"
-          : `${years}+ years required`;
-      }
-
-      const value = textValue(job.experience_level).toUpperCase();
-
-      if (value === "EN") return "Entry Level";
-      if (value === "MI") return "Mid Level";
-      if (value === "SE") return "Senior";
-      if (value === "EX") return "Executive";
-
-      return textValue(job.experience_level) || "Experience Not Specified";
-    }
-
+    // 8. Build the job record using the existing Supabase schema.
     function calculateFitScore(job) {
       const content = `
         ${job.title || ""}
@@ -346,20 +447,25 @@ module.exports = async (req, res) => {
 
       return description
         ? description.substring(0, 500)
-        : `${textValue(job.title) || "Java Developer"} opportunity at ${getCompany(job) || "the company"}.`;
+        : `${textValue(job.title)} opportunity at ${getCompany(job)}.`;
     }
 
     function createWhyMatch(job) {
-      const content = `${job.title || ""} ${job.description || ""}`.toLowerCase();
+      const content =
+        `${job.title || ""} ${job.description || ""}`.toLowerCase();
+
       const skills = [];
 
       if (content.includes("java")) skills.push("Java");
       if (content.includes("spring boot")) skills.push("Spring Boot");
       if (content.includes("rest")) skills.push("REST APIs");
+
       if (content.includes("sql") || content.includes("mysql")) {
         skills.push("SQL/MySQL");
       }
+
       if (content.includes("react")) skills.push("React");
+
       if (content.includes("hibernate") || content.includes("jpa")) {
         skills.push("Hibernate/JPA");
       }
@@ -370,41 +476,49 @@ module.exports = async (req, res) => {
     }
 
     function createMissingSkills(job) {
-      const content = `${job.title || ""} ${job.description || ""}`.toLowerCase();
+      const content =
+        `${job.title || ""} ${job.description || ""}`.toLowerCase();
+
       const missing = [];
 
       if (!content.includes("docker")) missing.push("Docker");
       if (!content.includes("kubernetes")) missing.push("Kubernetes");
       if (!content.includes("aws")) missing.push("AWS");
-      if (!content.includes("microservices")) missing.push("Microservices");
+      if (!content.includes("microservices")) {
+        missing.push("Microservices");
+      }
 
       return missing.join(", ");
     }
 
+    function toDatabaseRecord(job) {
+      const classification = classifyExperience(job);
+
+      return {
+        title: textValue(job.title) || "Java Developer",
+        company: getCompany(job) || "Unknown",
+        location: getLocation(job) || "India / Remote",
+        experience: classification.experience,
+        "posted-at":
+          job.published ||
+          job.posted_at ||
+          job["posted-at"] ||
+          new Date().toISOString(),
+        category: classification.category,
+        fit_score: calculateFitScore(job),
+        summary: createSummary(job),
+        "why-match": createWhyMatch(job),
+        "missing-skills": createMissingSkills(job),
+        "apply-url": getApplyUrl(job),
+        source: "CleanJobData"
+      };
+    }
+
     const incomingJobs = deduplicate(
-      finalCandidates
-        .filter(job => !!getApplyUrl(job))
-        .map(job => ({
-          title: textValue(job.title) || "Java Developer",
-          company: getCompany(job) || "Unknown",
-          location: getLocation(job) || "India / Remote",
-          experience: formatExperience(job),
-          "posted-at":
-            job.published ||
-            job.posted_at ||
-            job["posted-at"] ||
-            new Date().toISOString(),
-          category: "Java / Backend",
-          fit_score: calculateFitScore(job),
-          summary: createSummary(job),
-          "why-match": createWhyMatch(job),
-          "missing-skills": createMissingSkills(job),
-          "apply-url": getApplyUrl(job),
-          source: "CleanJobData"
-        }))
+      finalCandidates.map(toDatabaseRecord)
     );
 
-    // 8. Read existing Supabase jobs
+    // 9. Read existing records. Never clear the table.
     const existingResponse = await fetch(
       `${restUrl}/jobs?select=*`,
       {
@@ -435,7 +549,8 @@ module.exports = async (req, res) => {
       });
     }
 
-    // 9. Identify duplicate saved rows without clearing the table
+    // 10. Remove duplicate existing rows only.
+    // All non-duplicate saved jobs are retained.
     const seenExistingKeys = new Set();
     const keptExisting = [];
     const duplicateIds = [];
@@ -452,7 +567,6 @@ module.exports = async (req, res) => {
       keptExisting.push(job);
     }
 
-    // Delete only identified duplicate IDs
     for (let i = 0; i < duplicateIds.length; i += 50) {
       const batch = duplicateIds.slice(i, i + 50);
       const deleteUrl = new URL(`${restUrl}/jobs`);
@@ -473,7 +587,61 @@ module.exports = async (req, res) => {
       }
     }
 
-    // 10. Insert only new unique jobs
+    // 11. Correct experience/category labels for matching existing jobs.
+    // Update only these two fields; keep all other saved data unchanged.
+    let existingUpdated = 0;
+
+    for (const savedJob of keptExisting) {
+      const sourceJob = uniqueSourceJobs.find(job =>
+        matchesJob(job, savedJob)
+      );
+
+      if (!sourceJob || savedJob.id == null) continue;
+
+      const classification = classifyExperience(sourceJob);
+
+      const newExperience = classification.experience;
+      const newCategory = classification.category;
+
+      if (
+        savedJob.experience === newExperience &&
+        savedJob.category === newCategory
+      ) {
+        continue;
+      }
+
+      const updateUrl = new URL(`${restUrl}/jobs`);
+
+      updateUrl.searchParams.set("id", `eq.${savedJob.id}`);
+
+      const updateResponse = await fetch(updateUrl.toString(), {
+        method: "PATCH",
+        headers: {
+          ...dbHeaders,
+          "Content-Type": "application/json",
+          Prefer: "return=minimal"
+        },
+        body: JSON.stringify({
+          experience: newExperience,
+          category: newCategory
+        })
+      });
+
+      if (!updateResponse.ok) {
+        return res.status(502).json({
+          success: false,
+          error: "Could not update an existing job's experience category",
+          details: await updateResponse.text(),
+          existingJobsPreserved: true
+        });
+      }
+
+      savedJob.experience = newExperience;
+      savedJob.category = newCategory;
+      existingUpdated++;
+    }
+
+    // 12. Insert only genuinely new jobs.
     const knownKeys = new Set();
 
     keptExisting.forEach(job => {
@@ -522,7 +690,28 @@ module.exports = async (req, res) => {
         : jobsToInsert.length;
     }
 
-    // 11. Diagnostics
+    // 13. Report category counts and sync diagnostics.
+    const categoryCounts = {
+      preferred_0_to_2_years: 0,
+      other_3_plus_years: 0,
+      overlapping_experience_range: 0,
+      experience_not_specified: 0
+    };
+
+    for (const job of incomingJobs) {
+      const group = classifyExperience(job).group;
+
+      if (group === "preferred") {
+        categoryCounts.preferred_0_to_2_years++;
+      } else if (group === "experienced") {
+        categoryCounts.other_3_plus_years++;
+      } else if (group === "review") {
+        categoryCounts.overlapping_experience_range++;
+      } else {
+        categoryCounts.experience_not_specified++;
+      }
+    }
+
     return res.status(200).json({
       success: true,
       search_terms: ["Java"],
@@ -531,8 +720,10 @@ module.exports = async (req, res) => {
       unique_source_jobs: uniqueSourceJobs.length,
       relevant: finalCandidates.length,
       incoming_unique: incomingJobs.length,
+      category_counts: categoryCounts,
       existing_before_sync: existingJobs.length,
       existing_duplicates_removed: duplicateIds.length,
+      existing_jobs_updated: existingUpdated,
       new_jobs_found: jobsToInsert.length,
       inserted: insertedCount,
       rejected_counts: rejected,
@@ -542,7 +733,7 @@ module.exports = async (req, res) => {
       search_window: "7 days",
       requested_limit: 50,
       message:
-        "Sync completed. Existing jobs were retained and new unique jobs were added."
+        "Sync completed. Jobs are categorized by experience; existing records were retained and only new unique jobs were inserted."
     });
 
   } catch (error) {
