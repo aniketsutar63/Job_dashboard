@@ -9,10 +9,7 @@ module.exports = async (req, res) => {
     if (!cleanJobKey || !rawSupabaseUrl || !supabaseKey) {
       return res.status(500).json({
         success: false,
-        error: "Required environment variables are missing",
-        apiKeyFound: !!cleanJobKey,
-        supabaseUrlFound: !!rawSupabaseUrl,
-        supabaseKeyFound: !!supabaseKey
+        error: "Required environment variables are missing"
       });
     }
 
@@ -26,7 +23,7 @@ module.exports = async (req, res) => {
       Authorization: `Bearer ${supabaseKey}`
     };
 
-    // 2. Make ONE CleanJobData request per sync.
+    // 2. One source request per sync to reduce rate limiting
     const params = new URLSearchParams({
       country_id: "101",
       title: "Java",
@@ -48,24 +45,20 @@ module.exports = async (req, res) => {
       }
     );
 
-    // Respect rate limits. Do not retry immediately.
     if (sourceResponse.status === 429) {
       return res.status(429).json({
         success: false,
         error: "CleanJobData rate limit reached",
         retry_after: sourceResponse.headers.get("retry-after"),
-        message:
-          "Existing jobs were not changed. Wait before running the sync again."
+        message: "Existing jobs were not changed. Wait before syncing again."
       });
     }
 
     if (!sourceResponse.ok) {
-      const details = await sourceResponse.text();
-
       return res.status(502).json({
         success: false,
         error: `CleanJobData API error: ${sourceResponse.status}`,
-        details
+        details: await sourceResponse.text()
       });
     }
 
@@ -80,7 +73,7 @@ module.exports = async (req, res) => {
 
     const sourceJobs = sourceResult.data;
 
-    // 3. Normalization helpers
+    // 3. Helpers
     function textValue(value) {
       if (value == null) return "";
 
@@ -128,9 +121,7 @@ module.exports = async (req, res) => {
 
     function getCompany(job) {
       return textValue(
-        job.company ||
-        job.company_name ||
-        job.employer
+        job.company || job.company_name || job.employer
       );
     }
 
@@ -156,7 +147,6 @@ module.exports = async (req, res) => {
       const company = normalize(getCompany(job));
       const location = normalize(getLocation(job));
       const url = normalizeUrl(getApplyUrl(job));
-
       const keys = [];
 
       if (title && company && location) {
@@ -182,7 +172,7 @@ module.exports = async (req, res) => {
       });
     }
 
-    // 4. Remove source duplicates
+    // 4. Remove duplicate source IDs and duplicate jobs
     const sourceIds = new Set();
 
     const uniqueById = sourceJobs.filter(job => {
@@ -199,81 +189,137 @@ module.exports = async (req, res) => {
 
     const uniqueSourceJobs = deduplicate(uniqueById);
 
-    // 5. Filter relevant India-based Java roles.
-    // Accept a broader range of Indian locations and remote listings.
+    // 5. Detect explicit minimum experience requirements.
+    // Returns null when no clear minimum is found.
+    function getRequiredYears(job) {
+      const description = textValue(job.description)
+        .replace(/<[^>]*>/g, " ")
+        .replace(/&nbsp;/gi, " ")
+        .replace(/\s+/g, " ");
+
+      const title = textValue(job.title);
+      const text = `${title}. ${description}`;
+
+      const patterns = [
+        /\bminimum\s+(?:of\s+)?(\d+)\s*\+?\s*years?\b/i,
+        /\bmin\.?\s+experience\s*:\s*(\d+)\s*\+?\s*years?\b/i,
+        /\bminimum\s+experience\s*:\s*(\d+)\s*\+?\s*years?\b/i,
+        /\bat\s+least\s+(\d+)\s*years?\b/i,
+        /\b(\d+)\s*\+\s*years?\s+(?:of\s+)?experience\b/i,
+        /\bexperience\s*:\s*(\d+)\s*\+?\s*years?\b/i,
+        /\brequires?\s+(\d+)\s*\+?\s*years?\s+(?:of\s+)?experience\b/i,
+        /\b(\d+)\s*-\s*\d+\s+years?\s+(?:of\s+)?experience\b/i,
+        /\b(\d+)\s+years?\s+(?:of\s+)?(?:relevant\s+)?experience\s+(?:required|minimum)\b/i
+      ];
+
+      for (const pattern of patterns) {
+        const match = text.match(pattern);
+
+        if (match) return Number(match[1]);
+      }
+
+      return null;
+    }
+
+    // 6. Filter relevant jobs and record rejection reasons
+    const rejected = {
+      inactive: 0,
+      irrelevant_title: 0,
+      senior_title: 0,
+      experience_over_2_years: 0,
+      missing_location: 0
+    };
+
+    const rejectedExamples = [];
+
     const relevantJobs = uniqueSourceJobs.filter(job => {
-      if (job.is_active === false) return false;
+      let reason = "";
 
       const title = textValue(job.title).toLowerCase();
       const description = textValue(job.description).toLowerCase();
       const location = getLocation(job).toLowerCase();
       const combined = `${title} ${description}`;
 
-      const relevantTitle =
-        title.includes("java") ||
-        title.includes("spring boot") ||
-        title.includes("software developer") ||
-        title.includes("software engineer") ||
-        title.includes("backend developer") ||
-        title.includes("backend engineer") ||
-        title.includes("full stack") ||
-        title.includes("application developer") ||
-        title.includes("associate developer") ||
-        title.includes("junior developer");
+      if (job.is_active === false) {
+        reason = "inactive";
+      } else {
+        const relevantTitle =
+          /\bjava\b/.test(title) ||
+          /\bspring\s*boot\b/.test(title) ||
+          /\bsoftware developer\b/.test(title) ||
+          /\bsoftware engineer\b/.test(title) ||
+          /\bbackend developer\b/.test(title) ||
+          /\bbackend engineer\b/.test(title) ||
+          /\bback end developer\b/.test(title) ||
+          /\bfull stack\b/.test(title) ||
+          /\bapplication developer\b/.test(title) ||
+          /\bassociate developer\b/.test(title) ||
+          /\bjunior developer\b/.test(title);
 
-      if (!relevantTitle) return false;
+        if (!relevantTitle) {
+          reason = "irrelevant_title";
+        } else if (
+          /\bsenior\b|\bsr\.?\b|\blead\b|\bprincipal\b|\barchitect\b|\bdirector\b|\bmanager\b|\bhead of\b/i
+            .test(title)
+        ) {
+          reason = "senior_title";
+        } else {
+          const years = getRequiredYears(job);
 
-      const seniorTitle =
-        /\bsenior\b|\bsr\.?\b|\blead\b|\bprincipal\b|\barchitect\b|\bdirector\b|\bmanager\b|\bhead of\b/i
-          .test(title);
-
-      if (seniorTitle) return false;
-
-      // Exclude explicit minimum experience requirements above 2 years.
-      // Missing experience information does not automatically exclude a job.
-      const patterns = [
-        /minimum(?: of)?\s*(\d+)\s*\+?\s*years?/i,
-        /at least\s*(\d+)\s*years?/i,
-        /(\d+)\s*\+\s*years?\s+(?:of\s+)?experience/i,
-        /experience\s*:\s*(\d+)\s*\+?\s*years?/i
-      ];
-
-      for (const pattern of patterns) {
-        const match = combined.match(pattern);
-
-        if (match && Number(match[1]) > 2) {
-          return false;
+          if (years !== null && years > 2) {
+            reason = "experience_over_2_years";
+          } else if (!location) {
+            reason = "missing_location";
+          }
         }
       }
 
-      // The provider query is India-specific.
-      // Do not reject jobs merely because their city is not in a fixed list.
-      const remote =
-        /\bremote\b|\bwork from home\b|\bwfh\b|\bhybrid\b/i
-          .test(`${title} ${location} ${description}`);
+      if (reason) {
+        rejected[reason]++;
 
-      return Boolean(location || remote);
+        // Return only a few examples to help diagnose filtering.
+        if (rejectedExamples.length < 15) {
+          rejectedExamples.push({
+            title: textValue(job.title),
+            company: getCompany(job),
+            experience_level: textValue(job.experience_level),
+            detected_minimum_years: getRequiredYears(job),
+            reason
+          });
+        }
+
+        return false;
+      }
+
+      return true;
     });
 
     const finalCandidates = deduplicate(relevantJobs);
 
-    // 6. Format the records for the existing Supabase schema
-    function formatExperience(level) {
-      const value = String(level || "").toUpperCase();
+    // 7. Format experience and job details
+    function formatExperience(job) {
+      const years = getRequiredYears(job);
+
+      if (years !== null) {
+        return years === 0
+          ? "Entry Level"
+          : `${years}+ years required`;
+      }
+
+      const value = textValue(job.experience_level).toUpperCase();
 
       if (value === "EN") return "Entry Level";
       if (value === "MI") return "Mid Level";
       if (value === "SE") return "Senior";
       if (value === "EX") return "Executive";
 
-      return level || "Not specified";
+      return textValue(job.experience_level) || "Experience Not Specified";
     }
 
     function calculateFitScore(job) {
       const content = `
         ${job.title || ""}
         ${job.description || ""}
-        ${job.experience_level || ""}
       `.toLowerCase();
 
       let score = 60;
@@ -298,29 +344,22 @@ module.exports = async (req, res) => {
         .replace(/\s+/g, " ")
         .trim();
 
-      if (description) return description.substring(0, 500);
-
-      return `${textValue(job.title) || "Java Developer"} opportunity at ${getCompany(job) || "the company"}.`;
+      return description
+        ? description.substring(0, 500)
+        : `${textValue(job.title) || "Java Developer"} opportunity at ${getCompany(job) || "the company"}.`;
     }
 
     function createWhyMatch(job) {
-      const content = `
-        ${job.title || ""}
-        ${job.description || ""}
-      `.toLowerCase();
-
+      const content = `${job.title || ""} ${job.description || ""}`.toLowerCase();
       const skills = [];
 
       if (content.includes("java")) skills.push("Java");
       if (content.includes("spring boot")) skills.push("Spring Boot");
       if (content.includes("rest")) skills.push("REST APIs");
-
       if (content.includes("sql") || content.includes("mysql")) {
         skills.push("SQL/MySQL");
       }
-
       if (content.includes("react")) skills.push("React");
-
       if (content.includes("hibernate") || content.includes("jpa")) {
         skills.push("Hibernate/JPA");
       }
@@ -331,19 +370,13 @@ module.exports = async (req, res) => {
     }
 
     function createMissingSkills(job) {
-      const content = `
-        ${job.title || ""}
-        ${job.description || ""}
-      `.toLowerCase();
-
+      const content = `${job.title || ""} ${job.description || ""}`.toLowerCase();
       const missing = [];
 
       if (!content.includes("docker")) missing.push("Docker");
       if (!content.includes("kubernetes")) missing.push("Kubernetes");
       if (!content.includes("aws")) missing.push("AWS");
-      if (!content.includes("microservices")) {
-        missing.push("Microservices");
-      }
+      if (!content.includes("microservices")) missing.push("Microservices");
 
       return missing.join(", ");
     }
@@ -355,7 +388,7 @@ module.exports = async (req, res) => {
           title: textValue(job.title) || "Java Developer",
           company: getCompany(job) || "Unknown",
           location: getLocation(job) || "India / Remote",
-          experience: formatExperience(job.experience_level),
+          experience: formatExperience(job),
           "posted-at":
             job.published ||
             job.posted_at ||
@@ -371,7 +404,7 @@ module.exports = async (req, res) => {
         }))
     );
 
-    // 7. Read existing jobs before changing anything.
+    // 8. Read existing Supabase jobs
     const existingResponse = await fetch(
       `${restUrl}/jobs?select=*`,
       {
@@ -384,12 +417,10 @@ module.exports = async (req, res) => {
     );
 
     if (!existingResponse.ok) {
-      const details = await existingResponse.text();
-
       return res.status(502).json({
         success: false,
         error: "Could not read existing Supabase jobs",
-        details,
+        details: await existingResponse.text(),
         existingJobsPreserved: true
       });
     }
@@ -404,7 +435,7 @@ module.exports = async (req, res) => {
       });
     }
 
-    // 8. Retain existing jobs; remove duplicate records individually.
+    // 9. Identify duplicate saved rows without clearing the table
     const seenExistingKeys = new Set();
     const keptExisting = [];
     const duplicateIds = [];
@@ -421,7 +452,7 @@ module.exports = async (req, res) => {
       keptExisting.push(job);
     }
 
-    // Delete only identified duplicate IDs, never the whole table.
+    // Delete only identified duplicate IDs
     for (let i = 0; i < duplicateIds.length; i += 50) {
       const batch = duplicateIds.slice(i, i + 50);
       const deleteUrl = new URL(`${restUrl}/jobs`);
@@ -434,17 +465,15 @@ module.exports = async (req, res) => {
       });
 
       if (!deleteResponse.ok) {
-        const details = await deleteResponse.text();
-
         return res.status(502).json({
           success: false,
           error: "Could not remove duplicate saved jobs",
-          details
+          details: await deleteResponse.text()
         });
       }
     }
 
-    // 9. Identify genuinely new jobs.
+    // 10. Insert only new unique jobs
     const knownKeys = new Set();
 
     keptExisting.forEach(job => {
@@ -464,7 +493,6 @@ module.exports = async (req, res) => {
       keys.forEach(key => knownKeys.add(key));
     }
 
-    // No need to write when there are no new records.
     let insertedCount = 0;
 
     if (jobsToInsert.length > 0) {
@@ -479,12 +507,10 @@ module.exports = async (req, res) => {
       });
 
       if (!insertResponse.ok) {
-        const details = await insertResponse.text();
-
         return res.status(502).json({
           success: false,
           error: "Supabase insert failed",
-          details,
+          details: await insertResponse.text(),
           existingJobsPreserved: true
         });
       }
@@ -496,6 +522,7 @@ module.exports = async (req, res) => {
         : jobsToInsert.length;
     }
 
+    // 11. Diagnostics
     return res.status(200).json({
       success: true,
       search_terms: ["Java"],
@@ -508,12 +535,14 @@ module.exports = async (req, res) => {
       existing_duplicates_removed: duplicateIds.length,
       new_jobs_found: jobsToInsert.length,
       inserted: insertedCount,
+      rejected_counts: rejected,
+      rejected_examples: rejectedExamples,
       cleared: false,
       retained_existing_jobs: true,
       search_window: "7 days",
       requested_limit: 50,
       message:
-        "Single-search sync completed. Existing jobs were retained and new unique jobs were added."
+        "Sync completed. Existing jobs were retained and new unique jobs were added."
     });
 
   } catch (error) {
