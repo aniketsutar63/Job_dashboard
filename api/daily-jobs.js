@@ -28,7 +28,12 @@ module.exports = async (req, res) => {
       ? supabaseUrl
       : `${supabaseUrl}/rest/v1`;
 
-    // 3. Fetch latest Java jobs
+    const supabaseHeaders = {
+      apikey: supabaseKey,
+      Authorization: `Bearer ${supabaseKey}`
+    };
+
+    // 3. Fetch the latest Java jobs
     const params = new URLSearchParams({
       country_id: "101",
       title: "Java",
@@ -53,7 +58,7 @@ module.exports = async (req, res) => {
     if (!response.ok) {
       const errorText = await response.text();
 
-      return res.status(response.status === 429 ? 429 : 502).json({
+      return res.status(502).json({
         success: false,
         error: `CleanJob API error: ${response.status}`,
         details: errorText
@@ -71,9 +76,30 @@ module.exports = async (req, res) => {
 
     const allJobs = result.data;
 
-    // 4. Normalize values for duplicate detection
+    // 4. Normalization helpers
+    function getText(value) {
+      if (value == null) return "";
+
+      if (Array.isArray(value)) {
+        return value.map(getText).filter(Boolean).join(" ");
+      }
+
+      if (typeof value === "object") {
+        return getText(
+          value.name ||
+          value.display_name ||
+          value.city ||
+          value.label ||
+          value.value ||
+          ""
+        );
+      }
+
+      return String(value);
+    }
+
     function normalizeText(value) {
-      return String(value || "")
+      return getText(value)
         .normalize("NFKD")
         .replace(/[\u0300-\u036f]/g, "")
         .toLowerCase()
@@ -86,8 +112,6 @@ module.exports = async (req, res) => {
 
       try {
         const parsed = new URL(String(value).trim());
-        parsed.hash = "";
-        parsed.search = "";
 
         return (
           parsed.hostname.toLowerCase().replace(/^www\./, "") +
@@ -98,62 +122,40 @@ module.exports = async (req, res) => {
       }
     }
 
-    
-function getJobKeys(job) {
-  function normalize(value) {
-    if (value && typeof value === "object") {
-      value =
-        value.name ||
-        value.display_name ||
-        value.city ||
-        value.label ||
-        "";
+    // Use BOTH job identity and application URL.
+    // Matching either key identifies a duplicate.
+    function getJobKeys(job) {
+      const title = normalizeText(job.title);
+      const company = normalizeText(job.company);
+      const location = normalizeText(job.location);
+
+      const keys = [];
+
+      if (title && company && location) {
+        keys.push(`job:${title}|${company}|${location}`);
+      }
+
+      const applyUrl =
+        job.application_url ||
+        job["apply-url"] ||
+        job.apply_url;
+
+      const normalizedUrl = normalizeUrl(applyUrl);
+
+      if (normalizedUrl) {
+        keys.push(`url:${normalizedUrl}`);
+      }
+
+      return keys;
     }
 
-    return String(value || "")
-      .normalize("NFKD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, " ")
-      .trim();
-  }
-
-  const title = normalize(job.title);
-  const company = normalize(
-    typeof job.company === "string"
-      ? job.company
-      : job.company?.name || job.company?.display_name
-  );
-  const location = normalize(job.location);
-
-  const keys = [];
-
-  if (title && company && location) {
-    keys.push(`job:${title}|${company}|${location}`);
-  }
-
-  const url = job.application_url || job["apply-url"];
-
-  if (url) {
-    try {
-      const parsed = new URL(url);
-      keys.push(
-        `url:${parsed.hostname.toLowerCase().replace(/^www\./, "")}${parsed.pathname.replace(/\/+$/, "")}`.toLowerCase()
-      );
-    } catch {
-      // Skip malformed URLs; title/company/location still work.
-    }
-  }
-
-  return keys;
-}
-
-
-    // 5. Deduplicate the source results
+    // 5. Remove duplicates from CleanJobData
     const sourceIds = new Set();
 
     const uniqueById = allJobs.filter(job => {
-      if (!job || job.id == null) return false;
+      if (!job || typeof job !== "object") return false;
+
+      if (job.id == null) return true;
 
       const id = String(job.id);
 
@@ -163,53 +165,67 @@ function getJobKeys(job) {
       return true;
     });
 
-    const seenKeys = new Set();
+    function deduplicateJobs(jobs) {
+      const seenKeys = new Set();
 
-    const uniqueJobs = uniqueById.filter(job => {
-      const keys = getJobKeys(job);
+      return jobs.filter(job => {
+        const keys = getJobKeys(job);
 
-      if (keys.length && keys.some(key => seenKeys.has(key))) {
-        return false;
-      }
+        if (keys.length === 0) {
+          // Keep jobs without enough information to compare.
+          return true;
+        }
 
-      keys.forEach(key => seenKeys.add(key));
-      return true;
-    });
+        if (keys.some(key => seenKeys.has(key))) {
+          return false;
+        }
+
+        keys.forEach(key => seenKeys.add(key));
+        return true;
+      });
+    }
+
+    const uniqueJobs = deduplicateJobs(uniqueById);
 
     // 6. Filter relevant India-based Java jobs
+    const indiaLocations = [
+      "india",
+      "pune",
+      "bangalore",
+      "bengaluru",
+      "hyderabad",
+      "mumbai",
+      "delhi",
+      "noida",
+      "gurgaon",
+      "gurugram",
+      "chennai",
+      "kolkata",
+      "ahmedabad",
+      "indore",
+      "coimbatore",
+      "thiruvananthapuram",
+      "kerala"
+    ];
+
     const filteredJobs = uniqueJobs.filter(job => {
       if (job.is_active === false) return false;
 
-      const title = String(job.title || "").toLowerCase();
-      const location = String(job.location || "").toLowerCase();
-      const description = String(job.description || "").toLowerCase();
+      const title = getText(job.title).toLowerCase();
+      const location = getText(job.location).toLowerCase();
+      const description = getText(job.description).toLowerCase();
 
       const hasJava =
-        title.includes("java") || description.includes("java");
+        title.includes("java") ||
+        description.includes("java");
 
       if (!hasJava) return false;
 
-      const indiaLocations = [
-        "india",
-        "pune",
-        "bangalore",
-        "bengaluru",
-        "hyderabad",
-        "mumbai",
-        "delhi",
-        "noida",
-        "gurgaon",
-        "gurugram",
-        "chennai",
-        "kolkata",
-        "ahmedabad",
-        "indore",
-        "coimbatore"
-      ];
+      const hasIndiaLocation = indiaLocations.some(place =>
+        location.includes(place)
+      );
 
-      if (!indiaLocations.some(place => location.includes(place))) {
-        return false;
-      }
+      if (!hasIndiaLocation) return false;
 
       const relevantRole =
         title.includes("java") ||
@@ -239,63 +255,74 @@ function getJobKeys(job) {
       return !seniorRole;
     });
 
-    // 7. Deduplicate again after filtering
-    const preparedKeys = new Set();
+    // 7. Deduplicate once more after filtering
+    const deduplicatedFilteredJobs = deduplicateJobs(filteredJobs);
 
-    const deduplicatedFilteredJobs = filteredJobs.filter(job => {
-      const keys = getJobKeys(job);
-
-      if (keys.length && keys.some(key => preparedKeys.has(key))) {
-        return false;
-      }
-
-      keys.forEach(key => preparedKeys.add(key));
-      return true;
-    });
-
-    // 8. Prepare jobs for Supabase
+    // 8. Prepare records for Supabase
     const newJobs = deduplicatedFilteredJobs
-      .filter(job => !!job.application_url)
-      .map(job => ({
-        title: job.title || "Java Developer",
-        company:
-          job.company?.name ||
-          job.company?.display_name ||
-          "Unknown",
-        location: job.location || "India",
-        experience: formatExperience(job.experience_level),
-        "posted-at": job.published || new Date().toISOString(),
-        category: "Java / Backend",
-        fit_score: calculateFitScore(job),
-        summary: createSummary(job),
-        "why-match": createWhyMatch(job),
-        "missing-skills": createMissingSkills(job),
-        "apply-url": job.application_url,
-        source: "CleanJobData"
-      }));
+      .filter(job => {
+        const url =
+          job.application_url ||
+          job["apply-url"] ||
+          job.apply_url;
 
-    // SAFETY: Do not delete existing jobs if no usable jobs were found.
-    if (newJobs.length === 0) {
+        return !!url;
+      })
+      .map(job => {
+        const company =
+          getText(job.company) || "Unknown";
+
+        const applicationUrl =
+          job.application_url ||
+          job["apply-url"] ||
+          job.apply_url;
+
+        return {
+          title: getText(job.title) || "Java Developer",
+          company,
+          location: getText(job.location) || "India",
+          experience: formatExperience(job.experience_level),
+          "posted-at":
+            job.published ||
+            job["posted-at"] ||
+            new Date().toISOString(),
+          category: "Java / Backend",
+          fit_score: calculateFitScore(job),
+          summary: createSummary(job),
+          "why-match": createWhyMatch(job),
+          "missing-skills": createMissingSkills(job),
+          "apply-url": applicationUrl,
+          source: "CleanJobData"
+        };
+      });
+
+    // Final safeguard: deduplicate the actual database payload
+    const finalPayload = deduplicateJobs(newJobs);
+
+    // Do not erase existing records if no usable jobs were found.
+    if (finalPayload.length === 0) {
       return res.status(200).json({
         success: true,
-        cleared: false,
-        inserted: 0,
         searched: allJobs.length,
         unique: uniqueJobs.length,
         relevant: filteredJobs.length,
+        deduplicated: deduplicatedFilteredJobs.length,
+        duplicates_removed:
+          filteredJobs.length - deduplicatedFilteredJobs.length,
+        cleared: false,
+        inserted: 0,
         message:
           "No usable jobs were found. Existing Supabase jobs were preserved."
       });
     }
 
-    // 9. Delete old jobs only after new jobs are prepared
+    // 9. Clear previous jobs
     const deleteResponse = await fetch(
       `${supabaseRestUrl}/jobs?id=not.is.null`,
       {
         method: "DELETE",
         headers: {
-          apikey: supabaseKey,
-          Authorization: `Bearer ${supabaseKey}`,
+          ...supabaseHeaders,
           Accept: "application/json"
         }
       }
@@ -311,18 +338,17 @@ function getJobKeys(job) {
       });
     }
 
-    // 10. Insert the latest unique jobs
+    // 10. Insert latest unique jobs
     const insertResponse = await fetch(
       `${supabaseRestUrl}/jobs`,
       {
         method: "POST",
         headers: {
-          apikey: supabaseKey,
-          Authorization: `Bearer ${supabaseKey}`,
+          ...supabaseHeaders,
           "Content-Type": "application/json",
           Prefer: "return=representation"
         },
-        body: JSON.stringify(newJobs)
+        body: JSON.stringify(finalPayload)
       }
     );
 
@@ -332,11 +358,15 @@ function getJobKeys(job) {
       return res.status(502).json({
         success: false,
         error: "Supabase insert failed after clearing old jobs",
-        details: errorText
+        details: errorText,
+        warning:
+          "Previous jobs were cleared; check Supabase before retrying."
       });
     }
 
-    // 11. Success response
+    const insertedRows = await insertResponse.json();
+
+    // 11. Return sync details
     return res.status(200).json({
       success: true,
       searched: allJobs.length,
@@ -345,10 +375,15 @@ function getJobKeys(job) {
       deduplicated: deduplicatedFilteredJobs.length,
       duplicates_removed:
         filteredJobs.length - deduplicatedFilteredJobs.length,
+      prepared_for_insert: finalPayload.length,
       cleared: true,
-      inserted: newJobs.length,
-      message: "Previous jobs cleared and latest unique Java jobs added successfully"
+      inserted: Array.isArray(insertedRows)
+        ? insertedRows.length
+        : finalPayload.length,
+      message:
+        "Latest unique Java jobs saved successfully"
     });
+
   } catch (error) {
     console.error("Daily jobs error:", error);
 
@@ -400,15 +435,19 @@ function calculateFitScore(job) {
 function createSummary(job) {
   const description = String(job.description || "")
     .replace(/<[^>]*>/g, " ")
+    .replace(/&nbsp;/gi, " ")
     .replace(/\s+/g, " ")
     .trim();
 
   if (!description) {
-    return `${job.title || "Java Developer"} opportunity at ${
-      job.company?.name ||
-      job.company?.display_name ||
-      "the company"
-    }.`;
+    const company =
+      typeof job.company === "string"
+        ? job.company
+        : job.company?.name ||
+          job.company?.display_name ||
+          "the company";
+
+    return `${job.title || "Java Developer"} opportunity at ${company}.`;
   }
 
   return description.substring(0, 500);
