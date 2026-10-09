@@ -98,26 +98,56 @@ module.exports = async (req, res) => {
       }
     }
 
-    function getJobKeys(job) {
-      const title = normalizeText(job.title);
-      const company = normalizeText(
-        job.company?.name || job.company?.display_name
-      );
-      const location = normalizeText(job.location);
-      const url = normalizeUrl(job.application_url);
-
-      const keys = [];
-
-      if (url) {
-        keys.push(`url:${url}`);
-      }
-
-      if (title && company && location) {
-        keys.push(`job:${title}|${company}|${location}`);
-      }
-
-      return keys;
+    
+function getJobKeys(job) {
+  function normalize(value) {
+    if (value && typeof value === "object") {
+      value =
+        value.name ||
+        value.display_name ||
+        value.city ||
+        value.label ||
+        "";
     }
+
+    return String(value || "")
+      .normalize("NFKD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, " ")
+      .trim();
+  }
+
+  const title = normalize(job.title);
+  const company = normalize(
+    typeof job.company === "string"
+      ? job.company
+      : job.company?.name || job.company?.display_name
+  );
+  const location = normalize(job.location);
+
+  const keys = [];
+
+  if (title && company && location) {
+    keys.push(`job:${title}|${company}|${location}`);
+  }
+
+  const url = job.application_url || job["apply-url"];
+
+  if (url) {
+    try {
+      const parsed = new URL(url);
+      keys.push(
+        `url:${parsed.hostname.toLowerCase().replace(/^www\./, "")}${parsed.pathname.replace(/\/+$/, "")}`.toLowerCase()
+      );
+    } catch {
+      // Skip malformed URLs; title/company/location still work.
+    }
+  }
+
+  return keys;
+}
+
 
     // 5. Deduplicate the source results
     const sourceIds = new Set();
